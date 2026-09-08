@@ -4,7 +4,7 @@ A terminal-inspired personal portfolio showcasing software engineering, AI/ML, s
 
 ## 🌐 Live
 
-**[View Portfolio](https://YOUR-DOMAIN-HERE)**
+**[View Portfolio](https://gauravjain.is-a.dev/)**
 
 ## 🚀 Features
 
