@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>root@jain: ~</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230a0f0c%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%2358d68d%22>_</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    cursor: none !important;
+  }
+
+  #cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10001;
+    transform: translate(-50%, -50%);
+    transition:
+      width 0.25s ease,
+      height 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  #cursor::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition:
+      width 0.25s ease,
+      height 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  #cursor.hover {
+    width: 12px;
+    height: 12px;
+    box-shadow: 0 0 10px rgba(88, 214, 141, 0.45);
+  }
+
+  #cursor.hover::before {
+    width: 34px;
+    height: 34px;
+    border-color: rgba(255, 255, 255, 1);
+  }
+
+  :root{
+    --bg: #090d0b;
+    --bg-panel: #0f1512;
+    --bg-panel-2: #131a16;
+    --bg-raised: #182018;
+    --green: #58d68d;
+    --green-dim: #2f6b4c;
+    --green-bright: #8ff0b6;
+    --amber: #e3b04b;
+    --text: #c9d6cc;
+    --text-dim: #6f8378;
+    --text-faint: #445048;
+    --red: #e0665f;
+    --border: #24312a;
+    --border-bright: #3c5347;
+    --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    --pixel: 'Press Start 2P', var(--mono);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg); color:var(--text);
+    font-family:var(--mono);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--green-dim); color:#e8fff0; }
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:var(--bg-panel); }
+  ::-webkit-scrollbar-thumb{ background:var(--border-bright); border-radius:0; }
+  ::-webkit-scrollbar-thumb:hover{ background:var(--green-dim); }
+
+  /* ---------- CRT / scanline overlay ---------- */
+  #crt{
+    position:fixed; inset:0; pointer-events:none; z-index:9999;
+    background:
+      repeating-linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0.16) 1px, rgba(0,0,0,0) 3px),
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.45) 100%);
+    mix-blend-mode:multiply;
+    opacity:0.55;
+  }
+  #crt::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0) 4%);
+    animation:flicker 6.5s infinite;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;} 92%{opacity:1;} 93%{opacity:0.85;} 94%{opacity:1;} 96%{opacity:0.9;} 97%{opacity:1;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    #crt::after{ animation:none; }
+  }
+
+  /* ---------- BOOT SCREEN ---------- */
+  #boot{
+    position:fixed; inset:0; background:#000; color:var(--green);
+    font-size:14px; line-height:1.55; padding:28px 34px;
+    z-index:500; white-space:pre-wrap; word-break:break-word;
+    display:flex; flex-direction:column;
+  }
+  #boot .cursor{ display:inline-block; width:8px; height:15px; background:var(--green); vertical-align:middle; animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+  #boot-skip {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 220px;
+    padding: 18px 30px;
+
+    border: 1px solid var(--border);
+    background: transparent;
+
+    color: var(--text);
+    font-family: var(--mono);
+    cursor: none !important;
+
+    transition:
+      border-color 0.25s ease,
+      transform 0.25s ease,
+      background 0.25s ease;
+  }
+
+  #boot-skip:hover {
+    border-color: var(--green-dim);
+    background: rgba(88, 214, 141, 0.04);
+    transform: translateX(-50%) scale(1.04);
+  }
+
+  .boot-system {
+    color: var(--green-bright);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    margin-bottom: 18px;
+  }
+
+  .boot-action {
+    color: var(--text);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+
+    animation: bootPulse 1.5s ease-in-out infinite;
+  }
+
+  .boot-hint {
+    margin-top: 10px;
+    color: var(--text-faint);
+    font-size: 10px;
+  }
+
+  @keyframes bootPulse {
+    0%, 100% {
+      opacity: 0.45;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* ---------- DESKTOP ---------- */
+  #desktop{
+    position:fixed; inset:0; opacity:0; pointer-events:none; transition:opacity 0.9s ease;
+    background:
+      radial-gradient(1100px 700px at 15% -10%, rgba(88,214,141,0.05), transparent 60%),
+      radial-gradient(900px 600px at 100% 110%, rgba(227,176,75,0.035), transparent 55%),
+      var(--bg);
+  }
+  #desktop.on{ opacity:1; pointer-events:auto; }
+
+  /* top status bar */
+  #topbar{
+    position:absolute; top:0; left:0; right:0; height:30px;
+    background:var(--bg-panel); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 12px; font-size:12px; color:var(--text-dim); z-index:100; user-select:none;
+  }
+  #topbar .left{ display:flex; align-items:center; gap:14px; }
+  #topbar .brand{ color:var(--green); font-weight:600; }
+  #topbar .ws{ display:flex; gap:6px; }
+  #topbar .ws span{ padding:2px 7px; border:1px solid var(--border); color:var(--text-faint); }
+  #topbar .ws span.active{ color:var(--bg); background:var(--green); border-color:var(--green); }
+  #topbar .right{ display:flex; align-items:center; gap:16px; color:var(--text-dim); }
+  #topbar .right b{ color:var(--text); font-weight:500; }
+
+  /* desktop icons */
+  #icons{
+    position:absolute; top:46px; left:18px; display:flex; flex-direction:column; gap:22px; z-index:5;
+  }
+  .icon{
+    width:84px; display:flex; flex-direction:column; align-items:center; gap:6px;
+    cursor:pointer; padding:8px 4px; border:1px solid transparent;
+  }
+  .icon:hover{ border-color:var(--border-bright); background:rgba(88,214,141,0.05); }
+  .icon .glyph{
+    width:38px; height:38px; border:1px solid var(--green-dim); display:flex; align-items:center; justify-content:center;
+    font-size:17px; color:var(--green); background:var(--bg-panel);
+  }
+  .icon .label{ font-size:11px; color:var(--text-dim); text-align:center; line-height:1.3; }
+
+  /* windows */
+  .win{
+    position:absolute; min-width:300px; background:var(--bg-panel);
+    border:1px solid var(--border-bright); box-shadow:0 18px 46px rgba(0,0,0,0.55);
+    display:flex; flex-direction:column; z-index:20;
+  }
+  .win.focused{ border-color:var(--green-dim); }
+  .win-titlebar{
+    height:32px; background:var(--bg-raised); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; padding:0 10px;
+    cursor:move; user-select:none; font-size:12px; color:var(--text-dim);
+  }
+  .win.focused .win-titlebar{ color:var(--green-bright); }
+  .win-titlebar .ttl{ display:flex; align-items:center; gap:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .win-titlebar .dot{ width:8px; height:8px; flex:none; background:var(--green-dim); }
+  .win.focused .win-titlebar .dot{ background:var(--green); }
+  .win-controls{ display:flex; gap:6px; }
+  .win-controls button{
+    width:18px; height:18px; background:transparent; border:1px solid var(--border);
+    color:var(--text-faint); font-family:var(--mono); font-size:11px; cursor:pointer; line-height:1;
+  }
+  .win-controls button:hover{ color:var(--bg); background:var(--green); border-color:var(--green); }
+  .win-controls button.x:hover{ background:var(--red); border-color:var(--red); }
+  .win-body{ padding:18px 20px; overflow-y:auto; font-size:13px; line-height:1.65; color:var(--text); }
+  .win-resize{ position:absolute; right:0; bottom:0; width:16px; height:16px; cursor:nwse-resize; }
+  .win-resize::after{ content:""; position:absolute; right:3px; bottom:3px; width:7px; height:7px; border-right:2px solid var(--border-bright); border-bottom:2px solid var(--border-bright); }
+
+  h3.sec{ margin:0 0 10px; color:var(--green-bright); font-size:13px; letter-spacing:0.02em; }
+  .prompt-line{ color:var(--text-faint); }
+  .prompt-line .p1{ color:var(--green); }
+  .prompt-line .p2{ color:var(--amber); }
+  a.lnk{ color:var(--amber); text-decoration:none; border-bottom:1px dotted var(--amber); }
+  a.lnk:hover{ color:var(--green-bright); border-color:var(--green-bright); }
+  .tag{ display:inline-block; font-size:11px; padding:2px 7px; border:1px solid var(--border-bright); color:var(--text-dim); margin:2px 5px 2px 0; }
+  .metric{ color:var(--green-bright); font-weight:600; }
+  .bullets{ margin:8px 0 16px; padding-left:18px; }
+  .bullets li{ margin-bottom:8px; }
+  .divider{ border:none; border-top:1px dashed var(--border); margin:16px 0; }
+
+  .proj-card{ border:1px solid var(--border); padding:14px 16px; margin-bottom:16px; background:var(--bg-panel-2); }
+  .proj-card h4{ margin:0 0 4px; color:var(--green-bright); font-size:13px; }
+  .proj-card .sub{ color:var(--text-dim); font-size:11px; margin-bottom:8px; }
+  .proj-card .links{ margin-top:10px; font-size:11px; }
+  .proj-card .links a{ margin-right:14px; }
+
+  /* taskbar */
+  #taskbar{
+    position:absolute; left:0; right:0; bottom:0; height:34px; background:var(--bg-panel);
+    border-top:1px solid var(--border); display:flex; align-items:center; gap:8px; padding:0 10px; z-index:100;
+  }
+  #taskbar .tb-btn{
+    display:flex; align-items:center; gap:6px; height:24px; padding:0 10px; font-size:11px;
+    border:1px solid var(--border); color:var(--text-dim); background:var(--bg-raised); cursor:pointer;
+  }
+  #taskbar .tb-btn.active{ color:var(--green-bright); border-color:var(--green-dim); }
+  #taskbar .tb-sep{ flex:1; }
+  #taskbar .clock{ font-size:11px; color:var(--text-dim); }
+
+  /* terminal window contents */
+  .term{ background:#070a08; font-size:13px; padding:14px 16px; height:100%; overflow-y:auto; }
+  .term-line{ white-space:pre-wrap; word-break:break-word; margin-bottom:4px; }
+  .term-out{ color:var(--text); }
+  .term-input-row{ display:flex; align-items:center; gap:6px; }
+  .term-input-row .p1{ color:var(--green); }
+  .term-input-row .p2{ color:var(--amber); flex:none; }
+  #termInput{
+    flex:1; background:transparent; border:none; outline:none; color:var(--text);
+    font-family:var(--mono); font-size:13px; caret-color:var(--green);
+  }
+  .hint{ color:var(--text-faint); }
+
+  /* mobile fallback */
+  #mobile-note{ display:none; }
+  @media (max-width:720px){
+    #icons{ flex-direction:row; flex-wrap:wrap; left:10px; right:10px; top:40px; }
+    .win{ left:6px !important; right:6px !important; width:auto !important; top:70px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+
+<div id="crt"></div>
+
+<!-- ============ BOOT SCREEN ============ -->
+<div id="boot">
+  <div id="boot-text"></div>
+
+  <button id="boot-skip">
+    <span class="boot-system">SYSTEM READY</span>
+    <span class="boot-action">[ ENTER ]</span>
+    <span class="boot-hint">launch desktop</span>
+  </button>
+</div>
+
+<!-- ============ DESKTOP ============ -->
+<div id="desktop">
+  <div id="topbar">
+    <div class="left">
+      <span class="brand">root@jain</span>
+      <div class="ws">
+        <span class="active">1:about</span>
+        <span>2:work</span>
+        <span>3:term</span>
+      </div>
+    </div>
+    <div class="right">
+      <span>batt <b>100%</b></span>
+      <span>net <b>up</b></span>
+      <span id="clock">00:00:00</span>
+    </div>
+  </div>
+
+  <div id="icons">
+    <div class="icon" data-win="about"><div class="glyph">◧</div><div class="label">whoami</div></div>
+    <div class="icon" data-win="experience"><div class="glyph">▤</div><div class="label">experience.log</div></div>
+    <div class="icon" data-win="projects"><div class="glyph">▦</div><div class="label">projects/</div></div>
+    <div class="icon" data-win="education"><div class="glyph">◫</div><div class="label">education.md</div></div>
+    <div class="icon" data-win="skills"><div class="glyph">▧</div><div class="label">skills.sh</div></div>
+    <div class="icon" data-win="contact"><div class="glyph">◨</div><div class="label">contact.md</div></div>
+    <div class="icon" data-win="terminal"><div class="glyph">&gt;_</div><div class="label">terminal</div></div>
+    <div class="icon" data-win="resume" title="Download resume"><div class="glyph">⇩</div><div class="label">resume.pdf</div></div>
+  </div>
+
+  <div id="windows-layer"></div>
+
+  <div id="taskbar">
+    <div class="tb-sep"></div>
+    <div class="clock" id="taskClock">root@jain ~ %</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   BOOT SEQUENCE
+========================================================= */
+const bootLines = [
+"root@jain v2.7.3 — LNMIIT-CCE build",
+"BIOS: Copyright (C) LNMIIT Labs — CGPA 7.30/10.00 detected",
+"",
+"Initializing hardware...",
+"  [OK] CPU ................ Python / C++ dual-core",
+"  [OK] GPU ................ PyTorch + TFLite acceleration",
+"  [OK] Audio subsystem ..... TTS / ASR / diarization drivers loaded",
+"  [OK] Network stack ....... FastAPI, Node.js, Express online",
+"",
+"Mounting filesystems...",
+"  /home/gaurav/projects ......... mounted (5 entries)",
+"  /home/gaurav/experience ....... mounted (Jio Platforms Ltd.)",
+"  /home/gaurav/thesis ........... mounted (GAN-based deepfake audio detection)",
+"",
+"Starting services...",
+"  systemd[1]: Started ml-engineering.service",
+"  systemd[1]: Started full-stack-shipping.service",
+"  systemd[1]: Started indic-language-ai.service",
+"",
+"Login: root@jain",
+"Loading root@jain desktop environment..."
+];
+
+const bootTextEl = document.getElementById('boot-text');
+const bootEl = document.getElementById('boot');
+const desktopEl = document.getElementById('desktop');
+let bootDone = false;
+
+async function enterFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (err) {
+    console.log("Fullscreen unavailable:", err);
+  }
+}
+
+function finishBoot(){
+  if(bootDone) return;
+  bootDone = true;
+  bootEl.style.display = 'none';
+  desktopEl.classList.add('on');
+  openWindow('about');
+}
+
+function finishBoot(){
+  if(bootDone) return;
+  bootDone = true;
+  bootEl.style.display = 'none';
+  desktopEl.classList.add('on');
+  openWindow('about');
+}
+
+async function typeBoot(){
+  for(const line of bootLines){
+    if(bootDone) return;
+    await typeLine(line);
+    await sleep(line === "" ? 40 : 70);
+  }
+  await sleep(350);
+  if(!bootDone) finishBoot();
+}
+
+function typeLine(line){
+  return new Promise(resolve=>{
+    let i = 0;
+    const row = document.createElement('div');
+    bootTextEl.appendChild(row);
+    const iv = setInterval(()=>{
+      if(bootDone){ clearInterval(iv); resolve(); return; }
+      row.textContent = line.slice(0, i+1);
+      i++;
+      if(i > line.length){ clearInterval(iv); resolve(); }
+    }, 8);
+  });
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+document.getElementById('boot-skip').addEventListener('click', async () => {
+    await enterFullscreen();
+    finishBoot();
+  });
+document.addEventListener('keydown', async e => {
+    if(!bootDone && (e.key === 'Enter' || e.key === ' ')) {
+      await enterFullscreen();
+      finishBoot();
+    }
+  }, {once:false});
+typeBoot();
+
+/* =========================================================
+   CLOCK
+========================================================= */
+function tickClock(){
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  const ss = String(d.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
+}
+tickClock(); setInterval(tickClock, 1000);
+
+/* =========================================================
+   CONTENT
+========================================================= */
+const LINKS = {
+  github: "https://github.com/LesssggooGauravv",
+  linkedin: "https://www.linkedin.com/in/gaurav-jain-18954a333/",
+  leetcode: "https://leetcode.com/u/lesssggoogauravv",
+  email: "gauravjain20001643@gmail.com"
+};
+
+const WINDOWS = {
+  about: {
+    title: "about.txt — gaurav", w: 560, h: 430,
+    body: `
+      <div class="prompt-line"><span class="p1">root@jain</span>:<span class="p2">~</span>$ whoami</div>
+      <h3 class="sec" style="margin-top:10px;">Gaurav Jain</h3>
+      <p>
+      Software &amp; AI/ML engineer building intelligent systems that scale.
+      </p>
+      <p>
+      Built production speech systems spanning 22 Indian languages at Jio Platforms,
+      and developed an edge-deployable audio deepfake detector achieving
+      <span class="metric">1.87% EER</span>.
+      </p>
+      <p>
+      Final-year B.Tech in Computer &amp; Communication Engineering at LNMIIT Jaipur.
+      Focused on speech &amp; audio ML, scalable software, and edge deployment.
+      </p>
+      <p style="color:var(--text-dim); font-size:12px;">Engineer at the intersection of software and AI.</p>
+
+      <hr class="divider">
+
+      <h3 class="sec">navigation.txt</h3>
+
+      <p style="color:var(--text-dim); font-size:12px;">
+      Double-click an icon to open it · Drag windows to move ·
+      Resize from the corner · Open <span class="metric">terminal</span> to explore via commands.
+      </p>
+
+      <p style="color:var(--text-faint); font-size:11px;">
+      try: help &nbsp;·&nbsp; whoami &nbsp;·&nbsp; ls &nbsp;·&nbsp; ls projects &nbsp;·&nbsp; neofetch
+      </p>
+
+      <hr class="divider">
+
+      <div class="prompt-line"><span class="p1">root@jain</span>:<span class="p2">~</span>$ cat focus.txt</div>
+      <p style="margin-top:8px;">Speech &amp; audio ML (TTS / ASR / diarization / deepfake detection), GANs, RAG pipelines, and edge deployment — with a long-standing interest in Indic-language AI.</p>
+    `
+  },
+  experience: {
+    title: "experience.log — gaurav", w: 640, h: 460,
+    body: `
+      <h3 class="sec">Machine Learning Intern — TTS for Indic Languages</h3>
+      <div class="sub" style="color:var(--text-dim); font-size:12px; margin-bottom:12px;">Jio Platforms Limited · Navi Mumbai, India (On-site) · Jun 2026 – Jul 2026</div>
+      <ul class="bullets">
+        <li>Engineered a 4-version Indic-to-English video dubbing pipeline (audio separation, enhancement, translation, TTS synthesis), improving output quality across 4 stakeholder-driven releases.</li>
+        <li>Architected a modular 6-stage system with automated per-segment QC gating and checkpoint-routing logic, enabling reliable selection across 5+ ML libraries and multiple language pairs.</li>
+        <li>Scaled cross-lingual voice cloning to <span class="metric">22 Indian languages</span> using 100 reference speakers, generating a 6,250-sentence multilingual corpus and cutting inference time via multi-GPU round-robin dispatch.</li>
+        <li>Established a Hindi TTS QA workflow across 1,000+ rows with 130+ pronunciation mappings, catching domain/emotion mismatches across 73 categories.</li>
+        <li>Developed a multilingual speaker diarization framework (WhisperX, VoxLingua107, Pyannote), resolving Gujarati-Hindi script ambiguity and removing per-language dependencies.</li>
+        <li>Resolved dependency conflicts across 4+ production libraries and remediated hardcoded API credentials, improving system stability and security posture.</li>
+        <li>Evaluated 5 voice-cloning and emotion-transfer approaches for production readiness and documented TTS data formats for team-wide reuse.</li>
+      </ul>
+      <div class="tag">PyTorch</div><div class="tag">WhisperX</div><div class="tag">Pyannote</div><div class="tag">Multi-GPU</div><div class="tag">Voice Cloning</div>
+    `
+  },
+  projects: {
+    title: "projects/ — 5 items", w: 660, h: 520,
+    body: `
+      <div class="proj-card">
+        <h4>VoiceShield — Offline Edge-Based Deepfake Voice Detection</h4>
+        <div class="sub">Samsung Solve for Tomorrow Hackathon · Individual submission</div>
+        <ul class="bullets">
+          <li>Independently designed and built an offline, edge-deployable audio deepfake detector end-to-end.</li>
+          <li>Trained a depthwise-separable CNN with SE-attention blocks on ASVspoof 2019 + WaveFake, hitting <span class="metric">1.87% EER</span> and <span class="metric">0.9982 ROC-AUC</span>.</li>
+          <li>Compressed the network to a <span class="metric">76KB</span> TFLite export for edge deployment, debugging a mixed-precision NaN-loss bug in distributed training.</li>
+          <li>Shipped a Gradio demo and reverted a fine-tuning change after catching a class-imbalance regression.</li>
+        </ul>
+        <div class="tag">PyTorch</div><div class="tag">TFLite</div><div class="tag">CNN</div><div class="tag">Gradio</div>
+        <div class="links"><a class="lnk" href="${LINKS.github}" target="_blank">view code →</a></div>
+      </div>
+
+      <div class="proj-card">
+        <h4>Stadium Setu — FIFA World Cup 2026 Operations Platform</h4>
+        <div class="sub">Full-stack hackathon build</div>
+        <ul class="bullets">
+          <li>Full-stack platform on Node/Express/Prisma/SQLite with JWT-based role access control.</li>
+          <li>Live WebSocket KPI dashboard, a RAG-powered chatbot, and a crowd-density heatmap for stadium operations.</li>
+        </ul>
+        <div class="tag">Node.js</div><div class="tag">Express</div><div class="tag">Prisma</div><div class="tag">WebSocket</div><div class="tag">RAG</div>
+        <div class="links"><a class="lnk" href="${LINKS.github}" target="_blank">view code →</a></div>
+      </div>
+
+      <div class="proj-card">
+        <h4>Latex Lifestyle — RAG Lifestyle-Coaching Chatbot</h4>
+        <div class="sub">Solo, zero-budget build</div>
+        <ul class="bullets">
+          <li>GRADE-informed evidence tiers with Qwen2.5-32B generation and a Llama critique pass.</li>
+          <li>Hybrid BM25 + Chroma retrieval with bge embeddings/reranker; FastAPI backend, Streamlit UI.</li>
+          <li>Open-source-only model enforcement throughout the stack.</li>
+        </ul>
+        <div class="tag">RAG</div><div class="tag">FastAPI</div><div class="tag">Streamlit</div><div class="tag">Chroma</div>
+        <div class="links"><a class="lnk" href="${LINKS.github}" target="_blank">view code →</a></div>
+      </div>
+
+      <div class="proj-card">
+        <h4>GAN-Based Deepfake Audio Detection</h4>
+        <div class="sub">Bachelor's Thesis · ongoing · supervised by Dr. Priyanka Gupta</div>
+        <ul class="bullets">
+          <li>Vanilla MLP-GAN baseline for detecting synthetic/deepfake audio, currently in progress alongside placement prep.</li>
+        </ul>
+        <div class="tag">GANs</div><div class="tag">PyTorch</div><div class="tag">Audio ML</div>
+        <div class="links"><a class="lnk" href="${LINKS.github}" target="_blank">view code →</a></div>
+      </div>
+
+      <div class="proj-card">
+        <h4>CNN-Based Acoustic Phoneme Classification Engine</h4>
+        <div class="sub">Speech processing / ASR foundation</div>
+        <ul class="bullets">
+          <li>2D-CNN in PyTorch classifying self-recorded speech (22.05 kHz) into 7 phoneme categories, using a 3-channel Mel-spectrogram + delta + delta-delta input (128 Mel bands).</li>
+          <li>Leakage-safe train-test split with controlled augmentation, scaled to ~100 samples/class.</li>
+          <li>Hit <span class="metric">75–85%</span> validation accuracy under strict non-leaking evaluation; confusion-matrix analysis confirmed genuine phonetic structure was learned.</li>
+        </ul>
+        <div class="tag">PyTorch</div><div class="tag">Librosa</div><div class="tag">CNN</div>
+        <div class="links"><a class="lnk" href="${LINKS.github}" target="_blank">view code →</a></div>
+      </div>
+    `
+  },
+  education: {
+    title: "education.md — gaurav", w: 540, h: 300,
+    body: `
+      <h3 class="sec">The LNM Institute of Information Technology (LNMIIT), Jaipur</h3>
+      <p style="color:var(--text-dim); font-size:12px; margin-top:-6px;">2023 – 2027</p>
+      <p>B.Tech, Computer and Communication Engineering &nbsp;·&nbsp; CGPA: <span class="metric">7.3 / 10</span></p>
+      <hr class="divider">
+      <p><b style="color:var(--green-bright);">Bachelor's Thesis:</b> GAN-Based Deepfake Audio Detection (Ongoing)<br>
+      Supervised by Dr. Priyanka Gupta</p>
+    `
+  },
+  skills: {
+    title: "skills.sh — gaurav", w: 560, h: 420,
+    body: `
+      <div class="prompt-line"><span class="p1">root@jain</span>:<span class="p2">~</span>$ ./skills.sh --list</div>
+      <br>
+      <p><b style="color:var(--green-bright);">Languages</b><br>Python, C++, Java, JavaScript, SQL, Bash</p>
+      <p><b style="color:var(--green-bright);">Tools &amp; Core CS</b><br>Git, GitHub, Kaggle, Google Colab, Linux, Data Structures &amp; Algorithms, OOP, OS, DBMS, Computer Networks</p>
+      <p><b style="color:var(--green-bright);">Machine Learning</b><br>PyTorch, TensorFlow, Keras, Scikit-learn, Hugging Face Transformers, CNNs, GANs, TFLite, Model Quantization, RAG</p>
+      <p><b style="color:var(--green-bright);">Speech &amp; Audio</b><br>ASR, TTS, Voice Cloning, Speaker Diarization, Mel Spectrograms, Noise Suppression, Librosa, Torchaudio, Gradio</p>
+      <p><b style="color:var(--green-bright);">Full-Stack</b><br>React.js, Node.js, Express.js, FastAPI, Tailwind CSS</p>
+    `
+  },
+  contact: {
+    title: "contact.md — gaurav", w: 480, h: 300,
+    body: `
+      <div class="prompt-line"><span class="p1">root@jain</span>:<span class="p2">~</span>$ cat contact.md</div>
+      <br>
+      <p>email &nbsp; <a class="lnk" href="mailto:${LINKS.email}">${LINKS.email}</a></p>
+      <p>github &nbsp; <a class="lnk" href="${LINKS.github}" target="_blank">github.com/LesssggooGauravv</a></p>
+      <p>linkedin &nbsp; <a class="lnk" href="${LINKS.linkedin}" target="_blank">linkedin.com/in/gaurav-jain-18954a333</a></p>
+      <p>leetcode &nbsp; <a class="lnk" href="${LINKS.leetcode}" target="_blank">leetcode.com/u/lesssggoogauravv</a></p>
+      <p style="color:var(--text-dim); margin-top:14px;">Surat, Gujarat, India</p>
+    `
+  }
+};
+
+/* =========================================================
+   WINDOW MANAGER
+========================================================= */
+const layer = document.getElementById('windows-layer');
+const taskbar = document.getElementById('taskbar');
+const taskClock = document.getElementById('taskClock');
+let zTop = 30;
+const openWins = {}; // id -> {el, taskBtn}
+let offsetCounter = 0;
+
+function openWindow(id){
+  if(openWins[id]){
+    focusWindow(id);
+    restoreIfMinimized(id);
+    return;
+  }
+  if(id === 'resume'){ downloadResume(); return; }
+  if(id === 'terminal'){ createTerminalWindow(); return; }
+
+  const cfg = WINDOWS[id];
+  if(!cfg) return;
+
+  const el = document.createElement('div');
+  el.className = 'win';
+  const baseX = 150 + (offsetCounter % 5) * 26;
+  const baseY = 60 + (offsetCounter % 5) * 22;
+  offsetCounter++;
+  el.style.left = baseX + 'px';
+  el.style.top = baseY + 'px';
+  el.style.width = Math.min(cfg.w, window.innerWidth - 40) + 'px';
+  el.style.height = Math.min(cfg.h, window.innerHeight - 100) + 'px';
+
+  el.innerHTML = `
+    <div class="win-titlebar">
+      <div class="ttl"><span class="dot"></span><span>${cfg.title}</span></div>
+      <div class="win-controls">
+        <button class="min" title="minimize">_</button>
+        <button class="x" title="close">x</button>
+      </div>
+    </div>
+    <div class="win-body">${cfg.body}</div>
+    <div class="win-resize"></div>
+  `;
+  layer.appendChild(el);
+  makeDraggable(el);
+  makeResizable(el);
+  el.addEventListener('mousedown', ()=>focusWindow(id));
+
+  el.querySelector('.x').addEventListener('click', ()=>closeWindow(id));
+  el.querySelector('.min').addEventListener('click', ()=>minimizeWindow(id));
+
+  const taskBtn = document.createElement('div');
+  taskBtn.className = 'tb-btn active';
+  taskBtn.textContent = cfg.title.split(' — ')[0];
+  taskBtn.addEventListener('click', ()=>{
+    if(el.style.display === 'none'){ restoreIfMinimized(id); }
+    else { focusWindow(id); }
+  });
+  taskbar.insertBefore(taskBtn, taskbar.querySelector('.tb-sep'));
+
+  openWins[id] = {el, taskBtn};
+  focusWindow(id);
+}
+
+function focusWindow(id){
+  Object.entries(openWins).forEach(([k,v])=>{
+    v.el.classList.toggle('focused', k===id);
+    v.taskBtn.classList.toggle('active', k===id);
+  });
+  zTop++;
+  openWins[id].el.style.zIndex = zTop;
+}
+
+function closeWindow(id){
+  const w = openWins[id];
+  if(!w) return;
+  w.el.remove();
+  w.taskBtn.remove();
+  delete openWins[id];
+}
+
+function minimizeWindow(id){
+  const w = openWins[id];
+  if(!w) return;
+  w.el.style.display = 'none';
+  w.taskBtn.classList.remove('active');
+}
+
+function restoreIfMinimized(id){
+  const w = openWins[id];
+  if(!w) return;
+  w.el.style.display = 'flex';
+  focusWindow(id);
+}
+
+function makeDraggable(el){
+  const bar = el.querySelector('.win-titlebar');
+  let sx, sy, ox, oy, dragging = false;
+  bar.addEventListener('mousedown', e=>{
+    dragging = true;
+    sx = e.clientX; sy = e.clientY;
+    ox = el.offsetLeft; oy = el.offsetTop;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    let nx = ox + (e.clientX - sx);
+    let ny = oy + (e.clientY - sy);
+    ny = Math.max(30, ny);
+    el.style.left = nx + 'px';
+    el.style.top = ny + 'px';
+  });
+  window.addEventListener('mouseup', ()=> dragging = false);
+}
+
+function makeResizable(el){
+  const handle = el.querySelector('.win-resize');
+  let sx, sy, sw, sh, resizing = false;
+  handle.addEventListener('mousedown', e=>{
+    resizing = true;
+    sx = e.clientX; sy = e.clientY;
+    sw = el.offsetWidth; sh = el.offsetHeight;
+    e.stopPropagation(); e.preventDefault();
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!resizing) return;
+    el.style.width = Math.max(300, sw + (e.clientX - sx)) + 'px';
+    el.style.height = Math.max(200, sh + (e.clientY - sy)) + 'px';
+  });
+  window.addEventListener('mouseup', ()=> resizing = false);
+}
+
+document.querySelectorAll('.icon').forEach(ic=>{
+  ic.addEventListener('dblclick', ()=> openWindow(ic.dataset.win));
+  let tapped = false;
+  ic.addEventListener('click', ()=>{
+    if(tapped){ openWindow(ic.dataset.win); tapped=false; return; }
+    tapped = true;
+    setTimeout(()=> tapped=false, 400);
+  });
+});
+
+function downloadResume(){
+  const link = document.createElement('a');
+  link.href = 'resume.pdf';
+  link.download = 'Gaurav_Jain_Resume.pdf';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* =========================================================
+   TERMINAL APP
+========================================================= */
+function createTerminalWindow(){
+  const id = 'terminal';
+  const el = document.createElement('div');
+  el.className = 'win';
+  el.style.left = '140px'; el.style.top = '90px';
+  el.style.width = '600px'; el.style.height = '420px';
+  el.innerHTML = `
+    <div class="win-titlebar">
+      <div class="ttl"><span class="dot"></span><span>root@jain: ~</span></div>
+      <div class="win-controls">
+        <button class="min" title="minimize">_</button>
+        <button class="x" title="close">x</button>
+      </div>
+    </div>
+    <div class="win-body" style="padding:0; display:flex; flex-direction:column; height:100%;">
+      <div class="term" id="termOutput" style="flex:1;"></div>
+      <div class="term-input-row" style="padding:6px 16px 12px;">
+        <span class="p1">root@jain</span><span class="p2">:~$</span>
+        <input id="termInput" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="win-resize"></div>
+  `;
+  layer.appendChild(el);
+  makeDraggable(el);
+  makeResizable(el);
+  el.addEventListener('mousedown', ()=>focusWindow(id));
+  el.querySelector('.x').addEventListener('click', ()=>closeWindow(id));
+  el.querySelector('.min').addEventListener('click', ()=>minimizeWindow(id));
+
+  const taskBtn = document.createElement('div');
+  taskBtn.className = 'tb-btn active';
+  taskBtn.textContent = 'terminal';
+  taskBtn.addEventListener('click', ()=>{
+    if(el.style.display === 'none'){ restoreIfMinimized(id); }
+    else { focusWindow(id); }
+  });
+  taskbar.insertBefore(taskBtn, taskbar.querySelector('.tb-sep'));
+  openWins[id] = {el, taskBtn};
+  focusWindow(id);
+
+  const out = el.querySelector('#termOutput');
+  const input = el.querySelector('#termInput');
+
+  // printTerm(out, "root@jain terminal — type 'help' to see available commands.\\n");
+  printTerm(out,
+    `root@jain
+    -----------
+    portfolio shell
+
+    Type 'help' to explore.
+    Try 'neofetch' for system info.
+  `);
+  input.focus();
+  el.addEventListener('click', ()=> input.focus());
+
+  const history = []; let hIdx = -1;
+
+  input.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      const cmd = input.value;
+      printTerm(out, `<span class="p1">root@jain</span><span class="p2">:~$</span> ${escapeHtml(cmd)}`);
+      history.push(cmd); hIdx = history.length;
+      runCommand(cmd.trim(), out);
+      input.value = '';
+      out.scrollTop = out.scrollHeight;
+    } else if(e.key === 'ArrowUp'){
+      if(hIdx > 0){ hIdx--; input.value = history[hIdx]; }
+      e.preventDefault();
+    } else if(e.key === 'ArrowDown'){
+      if(hIdx < history.length-1){ hIdx++; input.value = history[hIdx]; } else { hIdx = history.length; input.value=''; }
+      e.preventDefault();
+    }
+  });
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// function printTerm(out, html){
+//   const row = document.createElement('div');
+//   row.className = 'term-line term-out';
+//   row.innerHTML = html;
+//   out.appendChild(row);
+//   out.scrollTop = out.scrollHeight;
+// }
+
+function printTerm(out, html){
+  const row = document.createElement('div');
+  row.className = 'term-line term-out';
+  row.innerHTML = html.replace(/\\n/g, '<br>');
+  out.appendChild(row);
+  out.scrollTop = out.scrollHeight;
+}
+
+const FILES = {
+  'about.txt': `Gaurav Jain — Software & AI/ML engineer building intelligent systems that scale.\\nFinal-year B.Tech CCE @ LNMIIT Jaipur (2023-2027). Focused on speech/audio ML, GANs, RAG, and edge deployment.`,
+  'experience.log': `Jio Platforms Limited — ML Intern, TTS for Indic Languages (Jun-Jul 2026)\\nScaled cross-lingual voice cloning to 22 Indian languages, 100 reference speakers, 6-stage dubbing pipeline.`,
+  'skills.sh': `Languages: Python, C++, Java, JavaScript, SQL, Bash\\nML: PyTorch, TensorFlow, Keras, HF Transformers, CNNs, GANs, TFLite, RAG\\nAudio: ASR, TTS, Voice Cloning, Diarization, Librosa, Torchaudio\\nFull-Stack: React, Node.js, Express, FastAPI, Tailwind`,
+  'education.md': `LNMIIT Jaipur — B.Tech CCE, 2023-2027, CGPA 7.3/10\\nBTP: GAN-Based Deepfake Audio Detection (ongoing), supervised by Dr. Priyanka Gupta`,
+  'contact.md': `email: ${LINKS.email}\\ngithub: ${LINKS.github}\\nlinkedin: ${LINKS.linkedin}\\nleetcode: ${LINKS.leetcode}`
+};
+const PROJECT_NAMES = ['voiceshield.md','stadium-setu.md','latex-lifestyle.md','gan-btp.md','phoneme-cnn.md'];
+
+function runCommand(raw, out){
+  if(raw === ''){ return; }
+  const parts = raw.split(' ').filter(Boolean);
+  const cmd = parts[0];
+  const arg = parts.slice(1).join(' ');
+
+  switch(cmd){
+    case 'help':
+      printTerm(out, `Available commands:\\n  <span class="hint">whoami</span>         short bio\\n  <span class="hint">about</span>          open about.txt window\\n  <span class="hint">ls</span>              list files\\n  <span class="hint">ls projects</span>     list project files\\n  <span class="hint">cat &lt;file&gt;</span>      print a file\\n  <span class="hint">projects</span>        open projects window\\n  <span class="hint">experience</span>      open experience window\\n  <span class="hint">education</span>       open education window\\n  <span class="hint">skills</span>          open skills window\\n  <span class="hint">contact</span>         open contact window\\n  <span class="hint">resume</span>          download resume\\n  <span class="hint">github / linkedin / leetcode / email</span>\\n  <span class="hint">neofetch</span>        system info\\n  <span class="hint">sudo &lt;anything&gt;</span>\\n  <span class="hint">clear</span>           clear the screen`);
+      break;
+    case 'whoami':
+      printTerm(out, "gaurav — Software & AI/ML engineer, LNMIIT Jaipur '27. Speech ML, GANs, RAG, edge deployment.");
+      break;
+    case 'about': openWindow('about'); printTerm(out, "opening about.txt ..."); break;
+    case 'projects':
+      if(arg === ''){ openWindow('projects'); printTerm(out, "opening projects/ ..."); }
+      break;
+    case 'experience': openWindow('experience'); printTerm(out, "opening experience.log ..."); break;
+    case 'education': openWindow('education'); printTerm(out, "opening education.md ..."); break;
+    case 'skills': openWindow('skills'); printTerm(out, "opening skills.sh ..."); break;
+    case 'contact': openWindow('contact'); printTerm(out, "opening contact.md ..."); break;
+    case 'resume': downloadResume(); break;
+    case 'github': printTerm(out, `→ <a class="lnk" href="${LINKS.github}" target="_blank">${LINKS.github}</a>`); break;
+    case 'linkedin': printTerm(out, `→ <a class="lnk" href="${LINKS.linkedin}" target="_blank">${LINKS.linkedin}</a>`); break;
+    case 'leetcode': printTerm(out, `→ <a class="lnk" href="${LINKS.leetcode}" target="_blank">${LINKS.leetcode}</a>`); break;
+    case 'email': printTerm(out, `→ <a class="lnk" href="mailto:${LINKS.email}">${LINKS.email}</a>`); break;
+    case 'ls':
+      if(arg === 'projects'){
+        printTerm(out, PROJECT_NAMES.join('\\n'));
+      } else {
+        printTerm(out, Object.keys(FILES).join('\\n') + '\\nprojects/');
+      }
+      break;
+    case 'cat':
+      if(!arg){ printTerm(out, 'usage: cat &lt;file&gt;'); break; }
+      if(FILES[arg]){ printTerm(out, FILES[arg]); }
+      else if(PROJECT_NAMES.includes(arg)){ openWindow('projects'); printTerm(out, `opening projects/${arg} in projects/ window ...`); }
+      else { printTerm(out, `cat: ${escapeHtml(arg)}: No such file or directory`); }
+      break;
+    case 'neofetch':
+      printTerm(out, `root@jain\\n-------------\\nOS: root@jain v2.7.3\\nHost: LNMIIT Jaipur, CCE '27\\nCGPA: 7.3/10\\nShell: skills.sh\\nCore: Python, C++, PyTorch\\nUptime: since 2023`);
+      break;
+    case 'clear': out.innerHTML = ''; break;
+    case 'exit': closeWindow('terminal'); break;
+    default:
+      if(cmd === 'sudo'){
+        printTerm(out, "Nice try. gaurav is not in the sudoers file. This incident will be reported (jk).");
+      } else {
+        printTerm(out, `command not found: ${escapeHtml(cmd)} — type 'help'`);
+      }
+  }
+}
+
+/* keep windows within viewport on resize */
+window.addEventListener('resize', ()=>{
+  Object.values(openWins).forEach(({el})=>{
+    if(el.offsetLeft > window.innerWidth - 80) el.style.left = (window.innerWidth - 300) + 'px';
+  });
+});
+
+const cursor = document.getElementById('cursor');
+
+document.addEventListener('mousemove', (e) => {
+  cursor.style.left = `${e.clientX}px`;
+  cursor.style.top = `${e.clientY}px`;
+});
+
+document.querySelectorAll(
+  'a, button, .icon, .win-titlebar, .win-resize, .tb-btn'
+).forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.classList.add('hover');
+  });
+
+  el.addEventListener('mouseleave', () => {
+    cursor.classList.remove('hover');
+  });
+});
+
+</script>
+</body>
+</html>
