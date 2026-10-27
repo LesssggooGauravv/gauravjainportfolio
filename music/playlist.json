@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Beat It",
+    "artist": "Michael Jackson",
+    "src": "music/Michael Jackson - Beat It.mp3"
+  },
+  {
+    "title": "Billie Jean",
+    "artist": "Michael Jackson",
+    "src": "music/Michael Jackson - Billie Jean.mp3"
+  },
+  {
+    "title": "Smooth Criminal",
+    "artist": "Michael Jackson",
+    "src": "music/Michael Jackson - Smooth Criminal.mp3"
+  },
+  {
+    "title": "Thriller",
+    "artist": "Michael Jackson",
+    "src": "music/Michael Jackson - Thriller.mp3"
+  },
+  {
+    "title": "Tokyo Drift (Fast & Furious)",
+    "artist": "Teriyaki Boyz",
+    "src": "music/Teriyaki Boyz - Tokyo Drift (Fast & Furious).mp3"
+  }
+]

@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAURAV JAIN :: JAIN-OS v2.7</title>
+<meta name="description" content="Gaurav Jain — Software & AI/ML engineer building intelligent systems that scale. Speech ML, GANs, RAG, and edge deployment.">
+<meta name="theme-color" content="#0a0e0a">
+<meta property="og:title" content="Gaurav Jain :: JAIN-OS v2.7">
+<meta property="og:description" content="Software & AI/ML engineer building intelligent systems that scale.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230a0e0a%22/><text x=%2250%22 y=%2270%22 font-size=%2264%22 text-anchor=%22middle%22 fill=%22%2333ff66%22 font-family=%22monospace%22>&gt;_</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e0a;
+    --green:#33ff66;
+    --green-dim:#1a4d2e;
+    --green-panel:#0f1f13;
+    --green-bright:#7dff9a;
+    --amber:#ffb000;
+    --off:#d7e8da;
+    --red:#ff4444;
+    --border:#24412e;
+    --pixel:'Press Start 2P', monospace;
+    --term:'VT323', monospace;
+  }
+
+  *{box-sizing:border-box;}
+
+  /* custom CRT-dot cursor, replaces the system pointer on desktop */
+  html,body,*,*::before,*::after{ cursor:none !important; }
+  #cursor{
+    position:fixed;
+    top:0;
+    left:0;
+    width:8px;
+    height:8px;
+    background:var(--green);
+    border-radius:50%;
+    pointer-events:none;
+    z-index:10001;
+    transform:translate(-50%,-50%);
+    transition:width .25s ease,height .25s ease,box-shadow .25s ease;
+  }
+  #cursor::before{
+    content:"";
+    position:absolute;
+    top:50%; left:50%;
+    width:22px; height:22px;
+    border:2px solid rgba(255,255,255,.85);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    transition:width .25s ease,height .25s ease,border-color .25s ease;
+  }
+  #cursor.hover{
+    width:12px;
+    height:12px;
+    box-shadow:0 0 10px rgba(51,255,102,.45);
+  }
+  #cursor.hover::before{
+    width:34px;
+    height:34px;
+    border-color:#fff;
+  }
+
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    background:var(--bg);
+    font-family:var(--term);
+    color:var(--green);
+    overflow:hidden;
+    -webkit-font-smoothing:none;
+  }
+
+  ::selection{background:var(--green);color:#000;}
+
+  /* ---------- CRT / scanline overlay ---------- */
+  #crt{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:9999;
+    background:
+      repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0px,rgba(0,0,0,.18) 1px,transparent 2px,transparent 3px),
+      radial-gradient(ellipse at center,rgba(0,0,0,0) 60%,rgba(0,0,0,.55) 100%);
+    mix-blend-mode:multiply;
+  }
+  #crt::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 4%);
+    animation:flicker 6.5s infinite;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    92%{opacity:1;}
+    93%{opacity:.85;}
+    94%{opacity:1;}
+    96%{opacity:.9;}
+    97%{opacity:1;}
+  }
+  #flicker{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:9998;
+    background:rgba(51,255,102,.02);
+    animation:flick 6s infinite;
+  }
+  @keyframes flick{
+    0%,97%,100%{opacity:0;}
+    98%{opacity:1;}
+    99%{opacity:0;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    #crt::after,#flicker{animation:none;}
+  }
+
+  /* ---------- BOOT SCREEN ---------- */
+  #boot{
+    position:fixed;
+    inset:0;
+    background:#000;
+    color:var(--green);
+    z-index:10000;
+    padding:28px 32px;
+    font-size:20px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    overflow:hidden;
+  }
+  #boot .cursor-blink{
+    animation:blink 1s step-start infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  #boot.hide{display:none;}
+  #skip-boot{
+    position:fixed;
+    left:50%;
+    bottom:18px;
+    transform:translateX(-50%);
+    min-width:230px;
+    z-index:10001;
+    font-family:var(--term);
+    color:var(--off);
+    background:transparent;
+    border:1px solid var(--green-dim);
+    padding:10px 22px 12px;
+    text-align:center;
+    transition:border-color .25s ease,transform .25s ease,background .25s ease;
+  }
+  #skip-boot:hover{
+    color:var(--green);
+    border-color:var(--green);
+    background:rgba(51,255,102,.04);
+    transform:translateX(-50%) scale(1.04);
+  }
+  .boot-system{
+    display:block;
+    font-family:var(--pixel);
+    font-size:11px;
+    color:var(--green-bright);
+    margin-bottom:10px;
+  }
+  .boot-action{
+    display:block;
+    font-family:var(--pixel);
+    font-size:10px;
+    animation:bootPulse 1.5s ease-in-out infinite;
+  }
+  .boot-hint{
+    display:block;
+    margin-top:8px;
+    color:#54735c;
+    font-size:13px;
+  }
+  @keyframes bootPulse{
+    0%,100%{opacity:.45;}
+    50%{opacity:1;}
+  }
+
+  /* ---------- DESKTOP ---------- */
+  #desktop{
+    position:relative;
+    width:100%;
+    height:100vh;
+    background:
+      linear-gradient(rgba(51,255,102,.035) 1px,transparent 1px) 0 0/100% 28px,
+      var(--bg);
+    padding:22px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .9s ease;
+  }
+  #desktop.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  /* ---------- DESKTOP ICONS ---------- */
+  .icon-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,92px);
+    gap:22px 10px;
+    width:fit-content;
+  }
+  .icon{
+    width:92px;
+    text-align:center;
+    user-select:none;
+    padding:6px 2px;
+    border:1px solid transparent;
+  }
+  .icon:hover,.icon:focus{
+    border:1px dotted var(--green-dim);
+    outline:none;
+  }
+  .icon .glyph{
+    font-size:34px;
+    line-height:1;
+    margin-bottom:6px;
+    filter:drop-shadow(2px 2px 0 var(--green-dim));
+  }
+  .icon .label{
+    font-family:var(--term);
+    font-size:16px;
+    color:var(--off);
+    word-break:break-word;
+  }
+  .icon:hover .label{color:var(--amber);}
+
+  /* ---------- WINDOWS ---------- */
+  .win{
+    position:absolute;
+    min-width:300px;
+    background:var(--bg);
+    border:2px solid var(--green);
+    box-shadow:6px 6px 0 rgba(0,0,0,.6);
+    display:flex;
+    flex-direction:column;
+    z-index:100;
+  }
+  .win.active{
+    border-color:var(--amber);
+    box-shadow:6px 6px 0 rgba(0,0,0,.75);
+    z-index:500;
+  }
+  .win .titlebar{
+    background:var(--green-dim);
+    color:var(--off);
+    font-family:var(--pixel);
+    font-size:11px;
+    padding:8px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    user-select:none;
+    border-bottom:2px solid var(--green);
+  }
+  .win.active .titlebar{background:#264d33;}
+  .win .titlebar .tb-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .win .titlebar .tb-btns{display:flex;gap:6px;flex-shrink:0;}
+  .win .titlebar button{
+    font-family:var(--pixel);
+    font-size:10px;
+    background:var(--bg);
+    color:var(--green);
+    border:1px solid var(--green);
+    width:22px;
+    height:20px;
+    line-height:1;
+    padding:0;
+  }
+  .win .titlebar button:hover{background:var(--red);color:#000;border-color:var(--red);}
+  .win .titlebar button.min-btn:hover{background:var(--amber);border-color:var(--amber);}
+  .win-body{
+    padding:18px 20px;
+    overflow-y:auto;
+    font-size:19px;
+    line-height:1.5;
+    background:
+      linear-gradient(rgba(51,255,102,.02) 1px,transparent 1px) 0 0/100% 24px,
+      var(--bg);
+  }
+  .win-body::-webkit-scrollbar{width:12px;}
+  .win-body::-webkit-scrollbar-track{background:var(--green-panel);}
+  .win-body::-webkit-scrollbar-thumb{background:var(--green-dim);border:2px solid var(--bg);}
+  .win-body h2{
+    font-family:var(--pixel);
+    font-size:14px;
+    color:var(--amber);
+    margin:0 0 16px;
+    letter-spacing:1px;
+  }
+  .win-body h3{
+    font-family:var(--term);
+    font-size:22px;
+    color:var(--off);
+    margin:18px 0 4px;
+    border-bottom:1px dashed var(--green-dim);
+    padding-bottom:4px;
+  }
+  .win-body .meta{color:var(--green-dim);font-size:16px;margin-bottom:8px;}
+  .win-body ul{margin:6px 0 14px;padding-left:22px;}
+  .win-body li{margin-bottom:6px;}
+  .win-body a{color:var(--amber);text-decoration:none;border-bottom:1px dotted var(--amber);}
+  .win-body a:hover{background:var(--amber);color:#000;}
+  .tag{
+    display:inline-block;
+    border:1px solid var(--green-dim);
+    color:var(--green);
+    padding:1px 8px;
+    margin:3px 4px 3px 0;
+    font-size:16px;
+  }
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .bar-label{width:130px;flex-shrink:0;font-size:17px;}
+  .bar-track{flex:1;height:14px;border:1px solid var(--green-dim);background:var(--green-panel);}
+  .bar-fill{height:100%;background:repeating-linear-gradient(90deg,var(--green) 0 6px,var(--green-dim) 6px 8px);}
+  .proj-card{border:1px solid var(--green-dim);padding:12px 14px;margin-bottom:14px;}
+  .proj-card h3{border:none;margin:0 0 6px;}
+  .proj-card .stat{color:var(--amber);}
+  .resize-handle{
+    position:absolute;
+    right:0;
+    bottom:0;
+    width:16px;
+    height:16px;
+    background:repeating-linear-gradient(135deg,var(--green-dim) 0 2px,transparent 2px 4px);
+  }
+
+  /* ---------- TERMINAL ---------- */
+  .term-body{
+    background:#000;
+    padding:14px 16px;
+    font-size:19px;
+    overflow-y:auto;
+    flex:1;
+  }
+  .term-line{white-space:pre-wrap;word-break:break-word;margin:0;}
+  .term-input-row{display:flex;align-items:center;}
+  .term-prompt{color:var(--amber);margin-right:8px;flex-shrink:0;}
+  .term-input{
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--green);
+    font-family:var(--term);
+    font-size:19px;
+    flex:1;
+    caret-color:var(--green);
+  }
+
+  /* ---------- TASKBAR + START MENU ---------- */
+  #taskbar{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    height:44px;
+    background:var(--green-panel);
+    border-top:2px solid var(--green);
+    display:flex;
+    align-items:center;
+    padding:0 10px;
+    gap:8px;
+    z-index:2000;
+    font-family:var(--pixel);
+    font-size:11px;
+  }
+  #start-btn{
+    background:var(--green-dim);
+    color:var(--off);
+    border:1px solid var(--green);
+    padding:9px 14px;
+    font-family:var(--pixel);
+    font-size:11px;
+  }
+  #start-btn:hover,#start-btn.open{background:var(--amber);color:#000;border-color:var(--amber);}
+  #open-tabs{display:flex;gap:6px;flex:1;overflow-x:auto;}
+  .taskbar-tab{
+    background:var(--bg);
+    border:1px solid var(--green-dim);
+    color:var(--green);
+    padding:9px 10px;
+    font-family:var(--term);
+    font-size:15px;
+    white-space:nowrap;
+    max-width:180px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .taskbar-tab.active{border-color:var(--amber);color:var(--amber);}
+  #clock{color:var(--off);font-family:var(--term);font-size:16px;border-left:1px solid var(--green-dim);padding-left:12px;white-space:nowrap;}
+  #start-menu{
+    position:fixed;
+    left:10px;
+    bottom:48px;
+    width:235px;
+    background:var(--bg);
+    border:2px solid var(--green);
+    box-shadow:6px 6px 0 rgba(0,0,0,.6);
+    z-index:2001;
+    display:none;
+    flex-direction:column;
+  }
+  #start-menu.open{display:flex;}
+  #start-menu .sm-head{background:var(--green-dim);color:var(--off);font-family:var(--pixel);font-size:11px;padding:10px;}
+  #start-menu button{background:none;border:none;color:var(--green);text-align:left;font-family:var(--term);font-size:18px;padding:9px 14px;border-bottom:1px solid var(--green-panel);}
+  #start-menu button:hover{background:var(--green-dim);color:var(--amber);}
+
+  ::-webkit-scrollbar{width:12px;height:12px;}
+  ::-webkit-scrollbar-track{background:var(--green-panel);}
+  ::-webkit-scrollbar-thumb{background:var(--green-dim);border:2px solid var(--bg);}
+
+  @media(max-width:760px){
+    .win{position:fixed !important;left:2vw !important;top:64px !important;width:96vw !important;height:70vh !important;}
+    .icon-grid{grid-template-columns:repeat(auto-fill,78px);}
+    .icon .label{font-size:14px;}
+    #clock{display:none;}
+    .bar-label{width:96px;font-size:14px;}
+  }
+
+  @media(pointer:coarse){
+    html,body,*,*::before,*::after{cursor:auto !important;}
+    #cursor{display:none;}
+  }
+
+  /* visible keyboard focus, on top of the .icon dotted-border treatment */
+  a:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--amber); outline-offset:2px;
+  }
+    /* ---------- MUSIC PLAYER ---------- */
+  .mp{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px;background:#000;overflow:hidden;}
+  .mp-now{border:1px solid var(--green-dim);background:var(--green-panel);padding:10px 12px;}
+  .mp-title{font-size:22px;color:var(--off);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:26px;}
+  .mp-artist{font-size:16px;color:var(--amber);min-height:20px;}
+  .mp-viz{display:flex;align-items:flex-end;gap:3px;height:34px;margin-top:8px;}
+  .mp-viz i{flex:1;height:4px;background:var(--green);}
+  .mp.playing .mp-viz i{animation:eq .6s ease-in-out infinite alternate;}
+  @keyframes eq{from{height:4px;}to{height:32px;}}
+  @media (prefers-reduced-motion:reduce){.mp.playing .mp-viz i{animation:none;height:14px;}}
+  .mp-time{display:flex;align-items:center;gap:10px;font-size:17px;}
+  .mp-time input{flex:1;}
+  .mp-ctrl{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;}
+  .mp button{font-family:var(--pixel);font-size:10px;background:var(--bg);color:var(--green);border:1px solid var(--green-dim);padding:9px 10px;}
+  .mp button:hover,.mp button.on{color:var(--amber);border-color:var(--amber);}
+  .mp .mp-big{background:var(--green-dim);color:var(--off);min-width:56px;}
+  .mp input[type=range]{-webkit-appearance:none;appearance:none;height:8px;background:var(--green-panel);border:1px solid var(--green-dim);outline:none;}
+  .mp input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:16px;background:var(--green);border:none;}
+  .mp input[type=range]::-moz-range-thumb{width:10px;height:16px;background:var(--green);border:none;border-radius:0;}
+  .mp-list{flex:1;min-height:80px;overflow-y:auto;border:1px solid var(--green-dim);}
+  .mp-track{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;font-size:18px;border-bottom:1px solid var(--green-panel);}
+  .mp-track:hover{background:var(--green-dim);color:var(--amber);}
+  .mp-track.current{color:var(--amber);}
+  .mp-track .mp-ta{color:var(--green-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="crt"></div>
+<div id="flicker"></div>
+
+<div id="boot">
+  <div id="boot-text"></div>
+  <span class="cursor-blink" id="boot-cursor">█</span>
+</div>
+
+<button id="skip-boot">
+  <span class="boot-system">SYSTEM READY</span>
+  <span class="boot-action">[ ENTER ]</span>
+  <span class="boot-hint">launch desktop</span>
+</button>
+
+<div id="desktop">
+  <div class="icon-grid" id="icon-grid"></div>
+</div>
+
+<div id="start-menu">
+  <div class="sm-head">JAIN-OS</div>
+  <button data-open="about">01. profile.txt</button>
+  <button data-open="experience">02. experience.log</button>
+  <button data-open="projects">03. projects/</button>
+  <button data-open="skills">04. skills.sys</button>
+  <button data-open="education">05. education.dat</button>
+  <button data-open="contact">06. contact.sh</button>
+  <button data-open="terminal">07. terminal.exe</button>
+  <button data-open="resume">08. resume.pdf</button>
+  <button data-open="music">09. music.exe</button>
+</div>
+
+<div id="taskbar">
+  <button id="start-btn">▤ START</button>
+  <div id="open-tabs"></div>
+  <div id="clock">--:--:--</div>
+</div>
+
+<!-- ================= WINDOW CONTENT TEMPLATES ================= -->
+<template id="tpl-about">
+  <h2>// ABOUT.TXT</h2>
+  <div class="meta">root@jain:~$ whoami</div>
+  <p id="tagline-rotator" style="font-size:22px;color:var(--off);min-height:34px;"></p>
+  <p>Software &amp; AI/ML engineer building intelligent systems that scale.</p>
+  <p>Built production speech systems spanning <span class="stat">22 Indian languages</span> at Jio Platforms, and developed an edge-deployable audio deepfake detector achieving <span class="stat">1.87% EER</span>.</p>
+  <p>Final-year B.Tech in Computer &amp; Communication Engineering at LNMIIT Jaipur. Focused on speech &amp; audio ML, scalable software, and edge deployment.</p>
+  <p class="meta">Engineer at the intersection of software and AI.</p>
+  <hr style="border:none;border-top:1px dashed var(--green-dim);margin:16px 0;">
+  <h3>navigation.txt</h3>
+  <p>Double-click an icon to open it · Drag windows to move · Resize from the corner · Open <span class="stat">terminal</span> to explore via commands.</p>
+  <p class="meta">try: help · whoami · ls · ls projects · neofetch</p>
+  <hr style="border:none;border-top:1px dashed var(--green-dim);margin:16px 0;">
+  <div class="meta">root@jain:~$ cat focus.txt</div>
+  <p>Speech &amp; audio ML (TTS / ASR / diarization / deepfake detection), GANs, RAG pipelines, and edge deployment — with a long-standing interest in Indic-language AI.</p>
+</template>
+
+<template id="tpl-experience">
+  <h2>// EXPERIENCE.LOG</h2>
+  <h3>Machine Learning Intern — TTS for Indic Languages</h3>
+  <div class="meta">Jio Platforms Limited · Navi Mumbai, India (On-site) · Jun 2026 – Jul 2026</div>
+  <ul>
+    <li>Engineered a 4-version Indic-to-English video dubbing pipeline (audio separation, enhancement, translation, TTS synthesis), improving output quality across 4 stakeholder-driven releases.</li>
+    <li>Architected a modular 6-stage system with automated per-segment QC gating and checkpoint-routing logic, enabling reliable selection across 5+ ML libraries and multiple language pairs.</li>
+    <li>Scaled cross-lingual voice cloning to <span class="stat">22 Indian languages</span> using 100 reference speakers, generating a 6,250-sentence multilingual corpus and cutting inference time via multi-GPU round-robin dispatch.</li>
+    <li>Established a Hindi TTS QA workflow across 1,000+ rows with 130+ pronunciation mappings, catching domain/emotion mismatches across 73 categories.</li>
+    <li>Developed a multilingual speaker diarization framework (WhisperX, VoxLingua107, Pyannote), resolving Gujarati-Hindi script ambiguity and removing per-language dependencies.</li>
+    <li>Resolved dependency conflicts across 4+ production libraries and remediated hardcoded API credentials, improving system stability and security posture.</li>
+    <li>Evaluated 5 voice-cloning and emotion-transfer approaches for production readiness and documented TTS data formats for team-wide reuse.</li>
+  </ul>
+  <span class="tag">PyTorch</span><span class="tag">WhisperX</span><span class="tag">Pyannote</span><span class="tag">Multi-GPU</span><span class="tag">Voice Cloning</span>
+</template>
+
+<template id="tpl-projects">
+  <h2>// PROJECTS/</h2>
+  <div class="meta">root@jain:~/projects$ ls -la --source=github.com/LesssggooGauravv</div>
+
+  <div class="proj-card">
+    <h3>VoiceShield — Offline Edge-Based Deepfake Voice Detection</h3>
+    <div class="meta">Samsung Solve for Tomorrow Hackathon · Individual submission</div>
+    <ul>
+      <li>Independently designed and built an offline, edge-deployable audio deepfake detector end-to-end.</li>
+      <li>Trained a depthwise-separable CNN with SE-attention blocks on ASVspoof 2019 + WaveFake, hitting <span class="stat">1.87% EER</span> and <span class="stat">0.9982 ROC-AUC</span>.</li>
+      <li>Compressed the network to a <span class="stat">76KB</span> TFLite export for edge deployment, debugging a mixed-precision NaN-loss bug in distributed training.</li>
+      <li>Shipped a Gradio demo and reverted a fine-tuning change after catching a class-imbalance regression.</li>
+    </ul>
+    <span class="tag">PyTorch</span><span class="tag">TFLite</span><span class="tag">CNN</span><span class="tag">Gradio</span>
+    <p><a href="https://github.com/LesssggooGauravv" target="_blank" rel="noopener">→ view code</a></p>
+  </div>
+
+  <div class="proj-card">
+    <h3>Stadium Setu — FIFA World Cup 2026 Operations Platform</h3>
+    <div class="meta">Full-stack hackathon build</div>
+    <ul>
+      <li>Full-stack platform on Node/Express/Prisma/SQLite with JWT-based role access control.</li>
+      <li>Live WebSocket KPI dashboard, a RAG-powered chatbot, and a crowd-density heatmap for stadium operations.</li>
+    </ul>
+    <span class="tag">Node.js</span><span class="tag">Express</span><span class="tag">Prisma</span><span class="tag">WebSocket</span><span class="tag">RAG</span>
+    <p><a href="https://github.com/LesssggooGauravv" target="_blank" rel="noopener">→ view code</a></p>
+  </div>
+
+  <div class="proj-card">
+    <h3>Latex Lifestyle — RAG Lifestyle-Coaching Chatbot</h3>
+    <div class="meta">Solo, zero-budget build</div>
+    <ul>
+      <li>GRADE-informed evidence tiers with Qwen2.5-32B generation and a Llama critique pass.</li>
+      <li>Hybrid BM25 + Chroma retrieval with bge embeddings/reranker; FastAPI backend, Streamlit UI.</li>
+      <li>Open-source-only model enforcement throughout the stack.</li>
+    </ul>
+    <span class="tag">RAG</span><span class="tag">FastAPI</span><span class="tag">Streamlit</span><span class="tag">Chroma</span>
+    <p><a href="https://github.com/LesssggooGauravv" target="_blank" rel="noopener">→ view code</a></p>
+  </div>
+
+  <div class="proj-card">
+    <h3>GAN-Based Deepfake Audio Detection</h3>
+    <div class="meta">Bachelor's Thesis · ongoing · supervised by Dr. Priyanka Gupta</div>
+    <ul><li>Vanilla MLP-GAN baseline for detecting synthetic/deepfake audio, currently in progress alongside placement prep.</li></ul>
+    <span class="tag">GANs</span><span class="tag">PyTorch</span><span class="tag">Audio ML</span>
+    <p><a href="https://github.com/LesssggooGauravv" target="_blank" rel="noopener">→ view code</a></p>
+  </div>
+
+  <div class="proj-card">
+    <h3>CNN-Based Acoustic Phoneme Classification Engine</h3>
+    <div class="meta">Speech processing / ASR foundation</div>
+    <ul>
+      <li>2D-CNN in PyTorch classifying self-recorded speech (22.05 kHz) into 7 phoneme categories, using a 3-channel Mel-spectrogram + delta + delta-delta input (128 Mel bands).</li>
+      <li>Leakage-safe train-test split with controlled augmentation, scaled to ~100 samples/class.</li>
+      <li>Hit <span class="stat">75–85%</span> validation accuracy under strict non-leaking evaluation; confusion-matrix analysis confirmed genuine phonetic structure was learned.</li>
+    </ul>
+    <span class="tag">PyTorch</span><span class="tag">Librosa</span><span class="tag">CNN</span>
+    <p><a href="https://github.com/LesssggooGauravv/Phoneme-Analysis-using-CNN" target="_blank" rel="noopener">→ github.com/LesssggooGauravv/Phoneme-Analysis-using-CNN</a></p>
+  </div>
+</template>
+
+<template id="tpl-skills">
+  <h2>// SKILLS.SYS</h2>
+  <div class="meta">root@jain:~/skills$ ./skills.sh --list</div>
+  <h3>Speech &amp; Audio</h3>
+  <div class="bar-row"><span class="bar-label">TTS / Voice Clone</span><div class="bar-track"><div class="bar-fill" style="width:92%;"></div></div></div>
+  <div class="bar-row"><span class="bar-label">ASR / Diarization</span><div class="bar-track"><div class="bar-fill" style="width:85%;"></div></div></div>
+  <div class="bar-row"><span class="bar-label">Signal Proc.</span><div class="bar-track"><div class="bar-fill" style="width:80%;"></div></div></div>
+  <h3>Machine Learning</h3>
+  <div class="bar-row"><span class="bar-label">PyTorch</span><div class="bar-track"><div class="bar-fill" style="width:90%;"></div></div></div>
+  <div class="bar-row"><span class="bar-label">GANs / CNNs</span><div class="bar-track"><div class="bar-fill" style="width:85%;"></div></div></div>
+  <div class="bar-row"><span class="bar-label">TFLite / Quant.</span><div class="bar-track"><div class="bar-fill" style="width:75%;"></div></div></div>
+  <h3>Full-Stack</h3>
+  <div class="bar-row"><span class="bar-label">Python</span><div class="bar-track"><div class="bar-fill" style="width:95%;"></div></div></div>
+  <div class="bar-row"><span class="bar-label">React / Node</span><div class="bar-track"><div class="bar-fill" style="width:65%;"></div></div></div>
+  <h3>Toolkit</h3>
+  <div>
+    <span class="tag">Python</span><span class="tag">C++</span><span class="tag">Java</span><span class="tag">JavaScript</span><span class="tag">SQL</span><span class="tag">Bash</span>
+    <span class="tag">Hugging Face</span><span class="tag">TensorFlow</span><span class="tag">Keras</span><span class="tag">Scikit-learn</span>
+    <span class="tag">Librosa</span><span class="tag">Torchaudio</span><span class="tag">Gradio</span><span class="tag">RAG</span>
+    <span class="tag">FastAPI</span><span class="tag">Express.js</span><span class="tag">Tailwind</span><span class="tag">Git</span><span class="tag">Kaggle</span>
+  </div>
+</template>
+
+<template id="tpl-education">
+  <h2>// EDUCATION.DAT</h2>
+  <h3>The LNM Institute of Information Technology (LNMIIT), Jaipur</h3>
+  <div class="meta">2023 – 2027</div>
+  <p>B.Tech, Computer and Communication Engineering — CGPA: <span class="stat">7.3 / 10</span></p>
+  <p><b style="color:var(--green-bright);">Bachelor's Thesis:</b> <em>GAN-Based Deepfake Audio Detection</em> (Ongoing)<br>Supervised by Dr. Priyanka Gupta</p>
+  <div class="meta">root@jain:~/education$ _</div>
+</template>
+
+<template id="tpl-contact">
+  <h2>// CONTACT.SH</h2>
+  <div class="meta">root@jain:~$ ./contact.sh --list</div>
+  <ul>
+    <li>email → <a href="mailto:gauravjain20001643@gmail.com">gauravjain20001643@gmail.com</a></li>
+    <li>github → <a href="https://github.com/LesssggooGauravv" target="_blank" rel="noopener">github.com/LesssggooGauravv</a></li>
+    <li>linkedin → <a href="https://www.linkedin.com/in/gaurav-jain-18954a333/" target="_blank" rel="noopener">linkedin.com/in/gaurav-jain-18954a333</a></li>
+    <li>leetcode → <a href="https://leetcode.com/u/lesssggoogauravv" target="_blank" rel="noopener">leetcode.com/u/lesssggoogauravv</a></li>
+  </ul>
+  <p class="meta">location → Surat, Gujarat, India</p>
+  <p class="meta">// connection established. say hi.</p>
+</template>
+
+<script>
+(function(){
+  const LINKS = {
+    github:'https://github.com/LesssggooGauravv',
+    linkedin:'https://www.linkedin.com/in/gaurav-jain-18954a333/',
+    leetcode:'https://leetcode.com/u/lesssggoogauravv',
+    email:'gauravjain20001643@gmail.com'
+  };
+
+  const taglines = [
+    'Engineer at the intersection of software and AI.',
+    'Software engineer specializing in AI/ML, building intelligent systems from idea to production.',
+    'Software & AI/ML engineer building intelligent systems that scale.'
+  ];
+
+  const apps = {
+    about:      {title:'ABOUT.TXT',      icon:'📄', w:560, h:500},
+    experience: {title:'EXPERIENCE.LOG', icon:'🧾', w:650, h:500},
+    projects:   {title:'PROJECTS/',      icon:'📁', w:700, h:600},
+    skills:     {title:'SKILLS.SYS',     icon:'⚙',  w:610, h:520},
+    education:  {title:'EDUCATION.DAT',  icon:'🎓', w:540, h:340},
+    contact:    {title:'CONTACT.SH',     icon:'✉',  w:520, h:340},
+    terminal:   {title:'TERMINAL.EXE',   icon:'>_',  w:640, h:460},
+    resume:     {title:'RESUME.PDF',     icon:'⇩',  w:380, h:220},
+    music:      {title:'MUSIC.EXE',      icon:'♪',  w:430, h:520}
+  };
+
+  const bootLines = [
+    'root@jain v2.7.3 — LNMIIT-CCE build',
+    'BIOS: Copyright (C) LNMIIT Labs — CGPA 7.30/10.00 detected',
+    '',
+    'Initializing hardware...',
+    '  [OK] CPU ................ Python / C++ dual-core',
+    '  [OK] GPU ................ PyTorch + TFLite acceleration',
+    '  [OK] Audio subsystem ..... TTS / ASR / diarization drivers loaded',
+    '  [OK] Network stack ....... FastAPI, Node.js, Express online',
+    '',
+    'Mounting filesystems...',
+    '  /home/gaurav/projects ......... mounted (5 entries)',
+    '  /home/gaurav/experience ....... mounted (Jio Platforms Ltd.)',
+    '  /home/gaurav/thesis ........... mounted (GAN-based deepfake audio detection)',
+    '',
+    'Starting services...',
+    '  systemd[1]: Started ml-engineering.service',
+    '  systemd[1]: Started full-stack-shipping.service',
+    '  systemd[1]: Started indic-language-ai.service',
+    '',
+    'Login: root@jain',
+    'Loading root@jain desktop environment...'
+  ];
+
+  const FILES = {
+    'about.txt':'Gaurav Jain — Software & AI/ML engineer building intelligent systems that scale.\\nFinal-year B.Tech CCE @ LNMIIT Jaipur (2023-2027). Focused on speech/audio ML, GANs, RAG, and edge deployment.',
+    'experience.log':'Jio Platforms Limited — ML Intern, TTS for Indic Languages (Jun-Jul 2026)\\nScaled cross-lingual voice cloning to 22 Indian languages, 100 reference speakers, 6-stage dubbing pipeline.',
+    'skills.sh':'Languages: Python, C++, Java, JavaScript, SQL, Bash\\nML: PyTorch, TensorFlow, Keras, HF Transformers, CNNs, GANs, TFLite, RAG\\nAudio: ASR, TTS, Voice Cloning, Diarization, Librosa, Torchaudio\\nFull-Stack: React, Node.js, Express, FastAPI, Tailwind',
+    'education.md':'LNMIIT Jaipur — B.Tech CCE, 2023-2027, CGPA 7.3/10\\nBTP: GAN-Based Deepfake Audio Detection (ongoing), supervised by Dr. Priyanka Gupta',
+    'contact.md':`email: ${LINKS.email}\\ngithub: ${LINKS.github}\\nlinkedin: ${LINKS.linkedin}\\nleetcode: ${LINKS.leetcode}`
+  };
+  const PROJECT_NAMES = ['voiceshield.md','stadium-setu.md','latex-lifestyle.md','gan-btp.md','phoneme-cnn.md'];
+
+  const bootEl = document.getElementById('boot');
+  const bootTextEl = document.getElementById('boot-text');
+  const skipBtn = document.getElementById('skip-boot');
+  const desktop = document.getElementById('desktop');
+  const iconGrid = document.getElementById('icon-grid');
+  const tabsEl = document.getElementById('open-tabs');
+  const startBtn = document.getElementById('start-btn');
+  const startMenu = document.getElementById('start-menu');
+  const cursor = document.getElementById('cursor');
+
+  const openWindows = {};
+  let zTop = 100;
+  let winOffset = 0;
+  let bootDone = false;
+
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+  function finishBoot(){
+    if(bootDone)return;
+    bootDone = true;
+    bootEl.classList.add('hide');
+    skipBtn.style.display='none';
+    desktop.classList.add('show');
+    startClock();
+    if(!openWindows.about) openApp('about');
+  }
+
+  function typeLine(line){
+    return new Promise(resolve=>{
+      let i=0;
+      const row=document.createElement('div');
+      bootTextEl.appendChild(row);
+      const iv=setInterval(()=>{
+        if(bootDone){clearInterval(iv);resolve();return;}
+        row.textContent=line.slice(0,i+1);
+        i++;
+        if(i>line.length){clearInterval(iv);resolve();}
+      },8);
+    });
+  }
+
+  async function typeBoot(){
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      bootTextEl.textContent = bootLines.join('\n');
+      await sleep(600);
+      if(!bootDone) finishBoot();
+      return;
+    }
+    for(const line of bootLines){
+      if(bootDone)return;
+      await typeLine(line);
+      await sleep(line===''?40:70);
+    }
+    await sleep(350);
+    if(!bootDone)finishBoot();
+  }
+
+  skipBtn.addEventListener('click',finishBoot);
+  document.addEventListener('keydown',e=>{
+    if(!bootDone && (e.key==='Enter'||e.key===' '))finishBoot();
+  });
+
+  function startClock(){
+    const clock=document.getElementById('clock');
+    function tick(){
+      const d=new Date();
+      const pad=n=>String(n).padStart(2,'0');
+      clock.textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+    tick();
+    setInterval(tick,1000);
+  }
+
+  function buildIcons(){
+    Object.keys(apps).forEach(key=>{
+      const a=apps[key];
+      const div=document.createElement('div');
+      div.className='icon';
+      div.tabIndex=0;
+      div.innerHTML=`<div class="glyph">${a.icon}</div><div class="label">${a.title}</div>`;
+      div.addEventListener('dblclick',()=>openApp(key));
+      div.addEventListener('keydown',e=>{if(e.key==='Enter')openApp(key);});
+      let lastTap=0;
+      div.addEventListener('touchend',()=>{
+        const now=Date.now();
+        if(now-lastTap<400)openApp(key);
+        lastTap=now;
+      });
+      iconGrid.appendChild(div);
+    });
+  }
+
+  startBtn.addEventListener('click',()=>{
+    startMenu.classList.toggle('open');
+    startBtn.classList.toggle('open');
+  });
+  startMenu.querySelectorAll('button[data-open]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      openApp(btn.dataset.open);
+      startMenu.classList.remove('open');
+      startBtn.classList.remove('open');
+    });
+  });
+  document.addEventListener('click',e=>{
+    if(!startMenu.contains(e.target)&&e.target!==startBtn){
+      startMenu.classList.remove('open');
+      startBtn.classList.remove('open');
+    }
+  });
+
+  function addTab(key){
+    if(document.getElementById('tab-'+key))return;
+    const a=apps[key];
+    const tab=document.createElement('div');
+    tab.className='taskbar-tab';
+    tab.id='tab-'+key;
+    tab.textContent=a.icon+' '+a.title;
+    tab.addEventListener('click',()=>{
+      const win=openWindows[key];
+      if(!win)return;
+      if(win.style.display==='none')win.style.display='flex';
+      focusWindow(key);
+    });
+    tabsEl.appendChild(tab);
+    setActiveTab(key);
+  }
+
+  function removeTab(key){
+    const tab=document.getElementById('tab-'+key);
+    if(tab)tab.remove();
+  }
+
+  function setActiveTab(key){
+    document.querySelectorAll('.taskbar-tab').forEach(t=>t.classList.remove('active'));
+    const tab=document.getElementById('tab-'+key);
+    if(tab)tab.classList.add('active');
+  }
+
+  function openApp(key){
+    if(key==='resume'){
+      downloadResume();
+      return;
+    }
+    if(openWindows[key]){
+      restoreWindow(key);
+      focusWindow(key);
+      return;
+    }
+    const a=apps[key];
+    const win=document.createElement('div');
+    win.className='win';
+
+    if(window.innerWidth>760){
+      winOffset=(winOffset+1)%6;
+      win.style.left=(90+winOffset*32)+'px';
+      win.style.top=(60+winOffset*28)+'px';
+      win.style.width=a.w+'px';
+      win.style.height=a.h+'px';
+    }
+
+    win.innerHTML=`
+      <div class="titlebar">
+        <div class="tb-title">${a.icon} ${a.title}</div>
+        <div class="tb-btns">
+          <button class="min-btn" title="minimize">_</button>
+          <button class="close-btn" title="close">x</button>
+        </div>
+      </div>
+      <div class="win-content" style="flex:1;display:flex;flex-direction:column;overflow:hidden;"></div>
+      <div class="resize-handle"></div>
+    `;
+    desktop.appendChild(win);
+
+    const content=win.querySelector('.win-content');
+    if(key==='terminal'){
+      buildTerminal(content);
+    }else if(key==='music'){
+      buildMusicPlayer(content);
+    }else{
+      const body=document.createElement('div');
+      body.className='win-body';
+      const tpl=document.getElementById('tpl-'+key);
+      body.appendChild(tpl.content.cloneNode(true));
+      content.appendChild(body);
+      if(key==='about')startTaglineRotator(body);
+    }
+
+    makeDraggable(win,win.querySelector('.titlebar'));
+    makeResizable(win);
+    win.querySelector('.close-btn').addEventListener('click',e=>{e.stopPropagation();closeWindow(key);});
+    win.querySelector('.min-btn').addEventListener('click',e=>{e.stopPropagation();minimizeWindow(key);});
+    win.addEventListener('mousedown',()=>focusWindow(key));
+
+    openWindows[key]=win;
+    focusWindow(key);
+    addTab(key);
+  }
+
+  function focusWindow(key){
+    Object.keys(openWindows).forEach(k=>{
+      if(openWindows[k])openWindows[k].classList.remove('active');
+    });
+    const win=openWindows[key];
+    if(!win)return;
+    zTop++;
+    win.style.zIndex=zTop;
+    win.classList.add('active');
+    setActiveTab(key);
+  }
+
+  function closeWindow(key){
+    if(key==='music'){audio.pause();mpUI=null;}
+    const win=openWindows[key];
+    if(win)win.remove();
+    delete openWindows[key];
+    removeTab(key);
+  }
+
+  function minimizeWindow(key){
+    const win=openWindows[key];
+    if(win)win.style.display='none';
+    setActiveTab('');
+  }
+
+  function restoreWindow(key){
+    const win=openWindows[key];
+    if(win)win.style.display='flex';
+  }
+
+  function makeDraggable(win,handle){
+    let ox=0,oy=0,dragging=false;
+    handle.addEventListener('mousedown',e=>{
+      if(window.innerWidth<=760)return;
+      dragging=true;
+      const rect=win.getBoundingClientRect();
+      ox=e.clientX-rect.left;
+      oy=e.clientY-rect.top;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove',e=>{
+      if(!dragging)return;
+      let nx=e.clientX-ox;
+      let ny=e.clientY-oy;
+      nx=Math.max(0,Math.min(nx,window.innerWidth-80));
+      ny=Math.max(22,Math.min(ny,window.innerHeight-64));
+      win.style.left=nx+'px';
+      win.style.top=ny+'px';
+    });
+    window.addEventListener('mouseup',()=>dragging=false);
+  }
+
+  function makeResizable(win){
+    const handle=win.querySelector('.resize-handle');
+    let resizing=false,sx=0,sy=0,sw=0,sh=0;
+    handle.addEventListener('mousedown',e=>{
+      if(window.innerWidth<=760)return;
+      resizing=true;
+      sx=e.clientX;sy=e.clientY;
+      sw=win.offsetWidth;sh=win.offsetHeight;
+      e.preventDefault();e.stopPropagation();
+    });
+    window.addEventListener('mousemove',e=>{
+      if(!resizing)return;
+      win.style.width=Math.max(300,sw+(e.clientX-sx))+'px';
+      win.style.height=Math.max(200,sh+(e.clientY-sy))+'px';
+    });
+    window.addEventListener('mouseup',()=>resizing=false);
+  }
+
+  function startTaglineRotator(scope){
+    const el=scope.querySelector('#tagline-rotator');
+    if(!el)return;
+    let i=0;
+    let iv=null;
+    let timeout=null;
+    function show(){
+      el.textContent='';
+      const line=taglines[i];
+      let c=0;
+      iv=setInterval(()=>{
+        el.textContent+=line[c++] || '';
+        if(c>=line.length){
+          clearInterval(iv);
+          timeout=setTimeout(next,2200);
+        }
+      },28);
+    }
+    function next(){
+      i=(i+1)%taglines.length;
+      show();
+    }
+    show();
+    scope._taglineCleanup=()=>{if(iv)clearInterval(iv);if(timeout)clearTimeout(timeout);};
+  }
+
+  function buildTerminal(content){
+    const body=document.createElement('div');
+    body.className='term-body';
+    body.innerHTML=`
+      <div id="term-output"></div>
+      <div class="term-input-row">
+        <span class="term-prompt">root@jain:~$</span>
+        <input class="term-input" id="term-input" type="text" autocomplete="off" spellcheck="false">
+      </div>
+    `;
+    content.appendChild(body);
+    const output=body.querySelector('#term-output');
+    const input=body.querySelector('#term-input');
+
+    function print(text){
+      const p=document.createElement('div');
+      p.className='term-line';
+      p.textContent=text;
+      output.appendChild(p);
+      body.scrollTop=body.scrollHeight;
+    }
+    function printHTML(html){
+      const p=document.createElement('div');
+      p.className='term-line';
+      p.innerHTML=html;
+      output.appendChild(p);
+      body.scrollTop=body.scrollHeight;
+    }
+
+    print('root@jain');
+    print('-----------');
+    print('portfolio shell');
+    print('');
+    print("Type 'help' to explore.");
+    print("Try 'neofetch' for system info.");
+
+    const commands={
+      help:()=>{
+        print('Available commands:');
+        print('  whoami         short bio');
+        print('  about          open about.txt window');
+        print('  ls             list files');
+        print('  ls projects    list project files');
+        print('  cat <file>     print a file');
+        print('  projects       open projects window');
+        print('  experience     open experience window');
+        print('  education      open education window');
+        print('  skills         open skills window');
+        print('  contact        open contact window');
+        print('  resume         download resume');
+        print('  github / linkedin / leetcode / email');
+        print('  neofetch       system info');
+        print('  music          open music player');
+        print('  sudo <anything>');
+        print('  clear          clear the screen');
+      },
+      whoami:()=>print('gaurav — Software & AI/ML engineer, LNMIIT Jaipur \'27. Speech ML, GANs, RAG, edge deployment.'),
+      about:()=>{openApp('about');print('opening about.txt ...');},
+      projects:()=>{openApp('projects');print('opening projects/ ...');},
+      experience:()=>{openApp('experience');print('opening experience.log ...');},
+      education:()=>{openApp('education');print('opening education.md ...');},
+      skills:()=>{openApp('skills');print('opening skills.sh ...');},
+      contact:()=>{openApp('contact');print('opening contact.md ...');},
+      resume:()=>downloadResume(),
+      github:()=>printHTML(`→ <a href="${LINKS.github}" target="_blank" rel="noopener">${LINKS.github}</a>`),
+      linkedin:()=>printHTML(`→ <a href="${LINKS.linkedin}" target="_blank" rel="noopener">${LINKS.linkedin}</a>`),
+      leetcode:()=>printHTML(`→ <a href="${LINKS.leetcode}" target="_blank" rel="noopener">${LINKS.leetcode}</a>`),
+      email:()=>printHTML(`→ <a href="mailto:${LINKS.email}">${LINKS.email}</a>`),
+      music:()=>{openApp('music');print('opening music player ...');}, 
+      neofetch:()=>print('root@jain\\n-------------\\nOS: root@jain v2.7.3\\nHost: LNMIIT Jaipur, CCE \'27\\nCGPA: 7.3/10\\nShell: skills.sh\\nCore: Python, C++, PyTorch\\nUptime: since 2023'),
+      clear:()=>{output.innerHTML='';},
+      sudo:()=>print('Nice try. gaurav is not in the sudoers file. This incident will be reported (jk).')
+    };
+
+    input.addEventListener('keydown',e=>{
+      if(e.key!=='Enter')return;
+      const raw=input.value;
+      const val=raw.trim();
+      print('root@jain:~$ '+raw);
+      input.value='';
+      if(!val)return;
+      const parts=val.split(' ').filter(Boolean);
+      const cmd=parts[0].toLowerCase();
+      const arg=parts.slice(1).join(' ');
+
+      if(cmd==='echo'){
+        print(arg);
+      }else if(cmd==='ls'){
+        print(arg==='projects'?PROJECT_NAMES.join('\\n'):Object.keys(FILES).join('\\n')+'\\nprojects/');
+      }else if(cmd==='cat'){
+        if(!arg){print('usage: cat <file>');return;}
+        if(FILES[arg])print(FILES[arg]);
+        else if(PROJECT_NAMES.includes(arg)){openApp('projects');print('opening projects/'+arg+' in projects/ window ...');}
+        else print('cat: '+arg+': No such file or directory');
+      }else if(commands[cmd]){
+        commands[cmd]();
+      }else if(cmd==='exit'){
+        closeWindow('terminal');
+      }else{
+        print(`command not found: ${cmd} — type 'help'`);
+      }
+    });
+
+    setTimeout(()=>input.focus(),100);
+    content.addEventListener('click',()=>input.focus());
+  }
+
+  function downloadResume(){
+    const a=document.createElement('a');
+    a.href='resume.pdf';
+    a.download='Gaurav_Jain_Resume.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  window.addEventListener('resize',()=>{
+    Object.values(openWindows).forEach(win=>{
+      if(window.innerWidth<=760)return;
+      const rect=win.getBoundingClientRect();
+      if(rect.right>window.innerWidth-12)win.style.left=Math.max(0,window.innerWidth-win.offsetWidth-12)+'px';
+      if(rect.bottom>window.innerHeight-52)win.style.top=Math.max(22,window.innerHeight-win.offsetHeight-52)+'px';
+    });
+  });
+
+  document.addEventListener('mousemove',e=>{
+    if(!cursor || window.matchMedia('(pointer:coarse)').matches)return;
+    cursor.style.left=e.clientX+'px';
+    cursor.style.top=e.clientY+'px';
+  });
+
+  document.addEventListener('mouseover',e=>{
+    if(!cursor)return;
+    if(e.target.closest('a,button,.icon,.titlebar,.resize-handle,.taskbar-tab'))cursor.classList.add('hover');
+  });
+  document.addEventListener('mouseout',e=>{
+    if(!cursor)return;
+    if(e.target.closest('a,button,.icon,.titlebar,.resize-handle,.taskbar-tab'))cursor.classList.remove('hover');
+  });
+    /* ---------- MUSIC PLAYER ---------- */
+  // 1) Put your .mp3 files in a "music" folder next to index.html
+  // 2) List them here. Use plain filenames (spaces are fine, don't pre-encode).
+  const PLAYLIST=[];   // filled from music/playlist.json
+  async function mpLoadPlaylist(){
+    try{
+      const r=await fetch('music/playlist.json',{cache:'no-cache'});
+      if(!r.ok)throw new Error(r.status);
+      PLAYLIST.splice(0,PLAYLIST.length,...await r.json());
+    }catch(e){
+      mpErr='playlist.json failed: '+e.message;
+      console.warn(e);
+    }
+    mpRender();
+  }
+  mpLoadPlaylist();
+
+  const audio=new Audio();
+  audio.preload='metadata';
+  audio.volume=0.7;
+  let mpIndex=-1,mpShuffle=false,mpRepeat=0,mpSeeking=false,mpUI=null,mpErr='';
+  const mpFmt=s=>{if(!isFinite(s))return'0:00';return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');};
+  const mpUrl=t=>t.url||encodeURI(t.src);
+
+  function mpLoad(i,play){
+    if(!PLAYLIST.length)return;
+    mpIndex=(i+PLAYLIST.length)%PLAYLIST.length;
+    mpErr='';
+    audio.src=mpUrl(PLAYLIST[mpIndex]);
+    if(play)audio.play().catch(()=>{});
+    mpRender();
+  }
+  function mpToggle(){
+    if(mpIndex<0){mpLoad(0,true);return;}
+    if(audio.paused)audio.play().catch(()=>{});else audio.pause();
+  }
+  function mpNext(auto){
+    if(!PLAYLIST.length)return;
+    if(mpShuffle&&PLAYLIST.length>1){
+      let n;do{n=Math.floor(Math.random()*PLAYLIST.length);}while(n===mpIndex);
+      mpLoad(n,true);return;
+    }
+    if(auto&&mpRepeat===0&&mpIndex===PLAYLIST.length-1){audio.pause();mpRender();return;}
+    mpLoad(mpIndex+1,true);
+  }
+  function mpPrev(){
+    if(mpIndex<0){mpLoad(0,true);return;}
+    if(audio.currentTime>3){audio.currentTime=0;return;}
+    mpLoad(mpIndex-1,true);
+  }
+
+  audio.addEventListener('play',()=>mpRender());
+  audio.addEventListener('pause',()=>mpRender());
+  audio.addEventListener('loadedmetadata',()=>{if(mpUI)mpUI.dur.textContent=mpFmt(audio.duration);});
+  audio.addEventListener('timeupdate',()=>{
+    if(!mpUI||mpSeeking)return;
+    mpUI.cur.textContent=mpFmt(audio.currentTime);
+    mpUI.seek.value=audio.duration?Math.floor(audio.currentTime/audio.duration*1000):0;
+  });
+  audio.addEventListener('ended',()=>{
+    if(mpRepeat===2){audio.currentTime=0;audio.play().catch(()=>{});}
+    else mpNext(true);
+  });
+  audio.addEventListener('error',()=>{
+    mpErr='ERR: cannot load '+((PLAYLIST[mpIndex]||{}).src||'file');
+    mpRender();
+  });
+
+  function mpRender(){
+    if(!mpUI)return;
+    const t=PLAYLIST[mpIndex];
+    mpUI.title.textContent=t?t.title:(PLAYLIST.length?'-- select a track --':'no tracks loaded');
+    // mpUI.artist.textContent=mpErr||(t?(t.artist||''):'');
+    mpUI.artist.textContent=mpErr||(t?(t.artist||''):(PLAYLIST.length?'':'run build-playlist.mjs & serve over http'));
+    mpUI.play.textContent=audio.paused?'▶':'❚❚';
+    mpUI.root.classList.toggle('playing',!audio.paused);
+    mpUI.shuf.classList.toggle('on',mpShuffle);
+    mpUI.rep.classList.toggle('on',mpRepeat>0);
+    mpUI.rep.textContent=mpRepeat===2?'RPT1':'RPT';
+    mpUI.list.innerHTML='';
+    PLAYLIST.forEach((tr,i)=>{
+      const row=document.createElement('div');
+      row.className='mp-track'+(i===mpIndex?' current':'');
+      const n=document.createElement('span');
+      n.textContent=String(i+1).padStart(2,'0')+'. '+tr.title;
+      const a=document.createElement('span');
+      a.className='mp-ta';
+      a.textContent=tr.artist||'';
+      row.append(n,a);
+      row.addEventListener('click',()=>{i===mpIndex?mpToggle():mpLoad(i,true);});
+      mpUI.list.appendChild(row);
+    });
+  }
+
+  function buildMusicPlayer(content){
+    const root=document.createElement('div');
+    root.className='mp';
+    const bars=Array.from({length:18},()=>
+      `<i style="animation-duration:${(0.45+Math.random()*0.6).toFixed(2)}s;animation-delay:-${Math.random().toFixed(2)}s"></i>`
+    ).join('');
+    root.innerHTML=`
+      <div class="mp-now">
+        <div class="mp-title"></div>
+        <div class="mp-artist"></div>
+        <div class="mp-viz">${bars}</div>
+      </div>
+      <div class="mp-time"><span class="mp-cur">0:00</span><input class="mp-seek" type="range" min="0" max="1000" value="0" aria-label="seek"><span class="mp-dur">0:00</span></div>
+      <div class="mp-ctrl">
+        <button data-a="shuf">SHUF</button>
+        <button data-a="prev">◀◀</button>
+        <button data-a="play" class="mp-big">▶</button>
+        <button data-a="next">▶▶</button>
+        <button data-a="rep">RPT</button>
+      </div>
+      <div class="mp-time"><span>VOL</span><input class="mp-vol" type="range" min="0" max="100" value="${Math.round(audio.volume*100)}" aria-label="volume"><button data-a="add">+ ADD MP3</button></div>
+      <div class="mp-list"></div>
+      <input type="file" class="mp-file" accept=".mp3,audio/*" multiple hidden>
+    `;
+    content.appendChild(root);
+    const q=s=>root.querySelector(s);
+    mpUI={root,title:q('.mp-title'),artist:q('.mp-artist'),play:q('[data-a=play]'),shuf:q('[data-a=shuf]'),rep:q('[data-a=rep]'),
+          seek:q('.mp-seek'),cur:q('.mp-cur'),dur:q('.mp-dur'),list:q('.mp-list'),file:q('.mp-file')};
+
+    root.addEventListener('click',e=>{
+      const b=e.target.closest('[data-a]');
+      if(!b)return;
+      const a=b.dataset.a;
+      if(a==='play')mpToggle();
+      else if(a==='next')mpNext(false);
+      else if(a==='prev')mpPrev();
+      else if(a==='shuf'){mpShuffle=!mpShuffle;mpRender();}
+      else if(a==='rep'){mpRepeat=(mpRepeat+1)%3;mpRender();}
+      else if(a==='add')mpUI.file.click();
+    });
+    mpUI.seek.addEventListener('input',()=>{
+      mpSeeking=true;
+      if(audio.duration){
+        audio.currentTime=mpUI.seek.value/1000*audio.duration;
+        mpUI.cur.textContent=mpFmt(audio.currentTime);
+      }
+    });
+    mpUI.seek.addEventListener('change',()=>{mpSeeking=false;});
+    q('.mp-vol').addEventListener('input',e=>{audio.volume=e.target.value/100;});
+    mpUI.file.addEventListener('change',()=>{
+      const first=PLAYLIST.length;
+      [...mpUI.file.files].forEach(f=>PLAYLIST.push({
+        title:f.name.replace(/\.[^.]+$/,''),artist:'local file',url:URL.createObjectURL(f)
+      }));
+      mpUI.file.value='';
+      if(mpIndex<0&&PLAYLIST.length>first)mpLoad(first,true);else mpRender();
+    });
+
+    mpUI.cur.textContent=mpFmt(audio.currentTime);
+    mpUI.dur.textContent=mpIndex>=0?mpFmt(audio.duration):'0:00';
+    mpRender();
+  }
+  buildIcons();
+  typeBoot();
+})();
+</script>
+</body>
+</html>
