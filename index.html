@@ -468,6 +468,29 @@
   .mp-track:hover{background:var(--green-dim);color:var(--amber);}
   .mp-track.current{color:var(--amber);}
   .mp-track .mp-ta{color:var(--green-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ---------- terminal: real-terminal feel ---------- */
+  .term-body{position:relative;background:#000;padding:12px 14px;font-size:20px;line-height:1.35;cursor:text;}
+  .term-body a{color:var(--amber);text-decoration:none;border-bottom:1px dotted var(--amber);}
+  .term-body a:hover{background:var(--amber);color:#000;}
+  .term-live{margin:0;}
+  .term-input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;border:0;padding:0;outline:none !important;}
+  .term-caret{display:inline-block;width:.55em;height:1em;margin-left:1px;background:var(--green);vertical-align:text-bottom;animation:blink 1s step-start infinite;}
+  .term-body:not(:focus-within) .term-caret{background:transparent;outline:1px solid var(--green);outline-offset:-1px;animation:none;}
+
+  /* ---------- declutter ---------- */
+  #crt{background:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0,rgba(0,0,0,.07) 1px,transparent 2px,transparent 3px),
+    radial-gradient(ellipse at center,rgba(0,0,0,0) 65%,rgba(0,0,0,.35) 100%);}
+  #cursor::before{display:none;}                      /* removes the white ring over your text */
+  .win{border-width:1px;box-shadow:4px 4px 0 rgba(0,0,0,.5);}
+  .win.active{border-color:var(--green);}             /* amber + green borders were fighting */
+  .win .titlebar{font-size:10px;padding:6px 8px;}
+  .icon-grid{display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;
+    height:calc(100vh - 90px);width:auto;gap:10px 6px;}
+  .icon{width:104px;}
+  .icon .label{font-size:15px;word-break:normal;}
+  @media(max-width:760px){.icon{width:80px;}}
 </style>
 </head>
 <body>
@@ -1006,40 +1029,47 @@
   }
 
   function buildTerminal(content){
+    const PROMPT='guest@jain:/$';
     const body=document.createElement('div');
     body.className='term-body';
     body.innerHTML=`
-      <div id="term-output"></div>
-      <div class="term-input-row">
-        <span class="term-prompt">root@jain:~$</span>
-        <input class="term-input" id="term-input" type="text" autocomplete="off" spellcheck="false">
-      </div>
+      <div class="term-output"></div>
+      <div class="term-line term-live"><span class="term-prompt">${PROMPT}</span><span class="term-typed"></span><span class="term-caret"></span></div>
+      <input class="term-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal input">
     `;
     content.appendChild(body);
-    const output=body.querySelector('#term-output');
-    const input=body.querySelector('#term-input');
+    const output=body.querySelector('.term-output');
+    const input=body.querySelector('.term-input');
+    const typed=body.querySelector('.term-typed');
+    const hist=[];let hi=0;
 
+    const scroll=()=>{body.scrollTop=body.scrollHeight;};
+    const sync=()=>{typed.textContent=input.value;scroll();};
     function print(text){
       const p=document.createElement('div');
       p.className='term-line';
       p.textContent=text;
-      output.appendChild(p);
-      body.scrollTop=body.scrollHeight;
+      output.appendChild(p);scroll();
     }
     function printHTML(html){
       const p=document.createElement('div');
       p.className='term-line';
       p.innerHTML=html;
+      output.appendChild(p);scroll();
+    }
+    function echo(raw){
+      const p=document.createElement('div');
+      p.className='term-line';
+      const s=document.createElement('span');
+      s.className='term-prompt';
+      s.textContent=PROMPT;
+      p.append(s,document.createTextNode(raw));
       output.appendChild(p);
-      body.scrollTop=body.scrollHeight;
     }
 
-    print('root@jain');
-    print('-----------');
-    print('portfolio shell');
+    print('JAIN-OS portfolio shell');
+    print("type 'help' to explore · try 'neofetch'");
     print('');
-    print("Type 'help' to explore.");
-    print("Try 'neofetch' for system info.");
 
     const commands={
       help:()=>{
@@ -1059,7 +1089,7 @@
         print('  neofetch       system info');
         print('  music          open music player');
         print('  sudo <anything>');
-        print('  clear          clear the screen');
+        print('  clear          clear the screen  (or Ctrl+L)');
       },
       whoami:()=>print('gaurav — Software & AI/ML engineer, LNMIIT Jaipur \'27. Speech ML, GANs, RAG, edge deployment.'),
       about:()=>{openApp('about');print('opening about.txt ...');},
@@ -1068,36 +1098,29 @@
       education:()=>{openApp('education');print('opening education.md ...');},
       skills:()=>{openApp('skills');print('opening skills.sh ...');},
       contact:()=>{openApp('contact');print('opening contact.md ...');},
+      music:()=>{openApp('music');print('opening music.exe ...');},
       resume:()=>downloadResume(),
       github:()=>printHTML(`→ <a href="${LINKS.github}" target="_blank" rel="noopener">${LINKS.github}</a>`),
       linkedin:()=>printHTML(`→ <a href="${LINKS.linkedin}" target="_blank" rel="noopener">${LINKS.linkedin}</a>`),
       leetcode:()=>printHTML(`→ <a href="${LINKS.leetcode}" target="_blank" rel="noopener">${LINKS.leetcode}</a>`),
       email:()=>printHTML(`→ <a href="mailto:${LINKS.email}">${LINKS.email}</a>`),
-      music:()=>{openApp('music');print('opening music player ...');}, 
-      neofetch:()=>print('root@jain\\n-------------\\nOS: root@jain v2.7.3\\nHost: LNMIIT Jaipur, CCE \'27\\nCGPA: 7.3/10\\nShell: skills.sh\\nCore: Python, C++, PyTorch\\nUptime: since 2023'),
+      neofetch:()=>print('guest@jain\n-------------\nOS: JAIN-OS v2.7.3\nHost: LNMIIT Jaipur, CCE \'27\nCGPA: 7.3/10\nShell: skills.sh\nCore: Python, C++, PyTorch\nUptime: since 2023'),
       clear:()=>{output.innerHTML='';},
-      sudo:()=>print('Nice try. gaurav is not in the sudoers file. This incident will be reported (jk).')
+      sudo:()=>print('Nice try. guest is not in the sudoers file. This incident will be reported (jk).')
     };
 
-    input.addEventListener('keydown',e=>{
-      if(e.key!=='Enter')return;
-      const raw=input.value;
-      const val=raw.trim();
-      print('root@jain:~$ '+raw);
-      input.value='';
-      if(!val)return;
+    function run(val){
       const parts=val.split(' ').filter(Boolean);
       const cmd=parts[0].toLowerCase();
       const arg=parts.slice(1).join(' ');
-
       if(cmd==='echo'){
         print(arg);
       }else if(cmd==='ls'){
-        print(arg==='projects'?PROJECT_NAMES.join('\\n'):Object.keys(FILES).join('\\n')+'\\nprojects/');
+        print(arg==='projects'?PROJECT_NAMES.join('\n'):Object.keys(FILES).join('\n')+'\nprojects/');
       }else if(cmd==='cat'){
         if(!arg){print('usage: cat <file>');return;}
         if(FILES[arg])print(FILES[arg]);
-        else if(PROJECT_NAMES.includes(arg)){openApp('projects');print('opening projects/'+arg+' in projects/ window ...');}
+        else if(PROJECT_NAMES.includes(arg)){openApp('projects');print('opening projects/'+arg+' ...');}
         else print('cat: '+arg+': No such file or directory');
       }else if(commands[cmd]){
         commands[cmd]();
@@ -1106,10 +1129,47 @@
       }else{
         print(`command not found: ${cmd} — type 'help'`);
       }
+    }
+
+    function complete(){
+      const v=input.value;
+      let pool,prefix='',word=v;
+      if(v.startsWith('cat ')){pool=Object.keys(FILES).concat(PROJECT_NAMES);prefix='cat ';word=v.slice(4);}
+      else if(v.startsWith('ls ')){pool=['projects'];prefix='ls ';word=v.slice(3);}
+      else if(v.includes(' ')){return;}
+      else pool=Object.keys(commands).concat(['ls','cat','echo','exit']);
+      const m=pool.filter(x=>x.startsWith(word));
+      if(m.length===1){input.value=prefix+m[0]+(prefix?'':' ');sync();}
+      else if(m.length>1){echo(v);print(m.join('   '));}
+    }
+
+    input.addEventListener('input',sync);
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        const raw=input.value,val=raw.trim();
+        echo(raw);
+        input.value='';sync();
+        if(!val)return;
+        hist.push(val);hi=hist.length;
+        run(val);scroll();
+      }else if(e.key==='ArrowUp'){
+        e.preventDefault();
+        if(hi>0){hi--;input.value=hist[hi];sync();}
+      }else if(e.key==='ArrowDown'){
+        e.preventDefault();
+        if(hi<hist.length){hi++;input.value=hist[hi]||'';sync();}
+      }else if(e.key==='Tab'){
+        e.preventDefault();complete();
+      }else if(e.ctrlKey&&e.key.toLowerCase()==='l'){
+        e.preventDefault();output.innerHTML='';
+      }
     });
 
-    setTimeout(()=>input.focus(),100);
-    content.addEventListener('click',()=>input.focus());
+    // click anywhere to focus, but don't steal focus while selecting text to copy
+    content.addEventListener('click',()=>{
+      if(!String(window.getSelection()))input.focus({preventScroll:true});
+    });
+    setTimeout(()=>input.focus({preventScroll:true}),100);
   }
 
   function downloadResume(){
