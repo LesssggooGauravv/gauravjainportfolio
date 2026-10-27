@@ -20,8 +20,18 @@
     "src": "music/Michael Jackson - Thriller.mp3"
   },
   {
-    "title": "Tokyo Drift (Fast & Furious)",
-    "artist": "Teriyaki Boyz",
-    "src": "music/Teriyaki Boyz - Tokyo Drift (Fast & Furious).mp3"
+    "title": "Don't Look Back In Anger",
+    "artist": "Oasis",
+    "src": "music/Oasis - Don't Look Back In Anger.mp3"
+  },
+  {
+    "title": "Live Forever",
+    "artist": "Oasis",
+    "src": "music/Oasis - Live Forever.mp3"
+  },
+  {
+    "title": "Wonderwall",
+    "artist": "Oasis",
+    "src": "music/Oasis - Wonderwall.mp3"
   }
 ]
