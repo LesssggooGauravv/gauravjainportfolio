@@ -2,6 +2,11 @@ name: Deploy site
 on:
   push:
     branches: [main]      # change to master if that's your branch
+    paths:
+      - 'music/**'
+      - 'index.html'
+      - 'build-playlist.mjs'
+      - '.github/workflows/**'
   workflow_dispatch:
 permissions:
   contents: read
