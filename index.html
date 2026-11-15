@@ -217,6 +217,7 @@
     user-select:none;
     padding:6px 2px;
     border:1px solid transparent;
+    cursor:pointer;
   }
   .icon:hover,.icon:focus{
     border:1px dotted var(--green-dim);
@@ -403,6 +404,7 @@
     max-width:180px;
     overflow:hidden;
     text-overflow:ellipsis;
+    cursor:pointer;
   }
   .taskbar-tab.active{border-color:var(--amber);color:var(--amber);}
   #clock{color:var(--off);font-family:var(--term);font-size:16px;border-left:1px solid var(--green-dim);padding-left:12px;white-space:nowrap;}
@@ -420,7 +422,7 @@
   }
   #start-menu.open{display:flex;}
   #start-menu .sm-head{background:var(--green-dim);color:var(--off);font-family:var(--pixel);font-size:11px;padding:10px;}
-  #start-menu button{background:none;border:none;color:var(--green);text-align:left;font-family:var(--term);font-size:18px;padding:9px 14px;border-bottom:1px solid var(--green-panel);}
+  #start-menu button{background:none;border:none;color:var(--green);text-align:left;font-family:var(--term);font-size:18px;padding:9px 14px;border-bottom:1px solid var(--green-panel);cursor:pointer;}
   #start-menu button:hover{background:var(--green-dim);color:var(--amber);}
 
   ::-webkit-scrollbar{width:12px;height:12px;}
@@ -441,7 +443,7 @@
   }
 
   /* visible keyboard focus, on top of the .icon dotted-border treatment */
-  a:focus-visible, button:focus-visible, input:focus-visible{
+  a:focus-visible, button:focus-visible, input:focus-visible, .icon:focus-visible{
     outline:2px solid var(--amber); outline-offset:2px;
   }
     /* ---------- MUSIC PLAYER ---------- */
@@ -455,16 +457,16 @@
   @keyframes eq{from{height:4px;}to{height:32px;}}
   @media (prefers-reduced-motion:reduce){.mp.playing .mp-viz i{animation:none;height:14px;}}
   .mp-time{display:flex;align-items:center;gap:10px;font-size:17px;}
-  .mp-time input{flex:1;}
+  .mp-time input{flex:1;cursor:pointer;}
   .mp-ctrl{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;}
-  .mp button{font-family:var(--pixel);font-size:10px;background:var(--bg);color:var(--green);border:1px solid var(--green-dim);padding:9px 10px;}
+  .mp button{font-family:var(--pixel);font-size:10px;background:var(--bg);color:var(--green);border:1px solid var(--green-dim);padding:9px 10px;cursor:pointer;}
   .mp button:hover,.mp button.on{color:var(--amber);border-color:var(--amber);}
   .mp .mp-big{background:var(--green-dim);color:var(--off);min-width:56px;}
   .mp input[type=range]{-webkit-appearance:none;appearance:none;height:8px;background:var(--green-panel);border:1px solid var(--green-dim);outline:none;}
   .mp input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:16px;background:var(--green);border:none;}
   .mp input[type=range]::-moz-range-thumb{width:10px;height:16px;background:var(--green);border:none;border-radius:0;}
   .mp-list{flex:1;min-height:80px;overflow-y:auto;border:1px solid var(--green-dim);}
-  .mp-track{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;font-size:18px;border-bottom:1px solid var(--green-panel);}
+  .mp-track{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;font-size:18px;border-bottom:1px solid var(--green-panel);cursor:pointer;}
   .mp-track:hover{background:var(--green-dim);color:var(--amber);}
   .mp-track.current{color:var(--amber);}
   .mp-track .mp-ta{color:var(--green-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -484,7 +486,7 @@
     radial-gradient(ellipse at center,rgba(0,0,0,0) 65%,rgba(0,0,0,.35) 100%);}
   #cursor::before{display:none;}                      /* removes the white ring over your text */
   .win{border-width:1px;box-shadow:4px 4px 0 rgba(0,0,0,.5);}
-  .win.active{border-color:var(--green);}             /* amber + green borders were fighting */
+  .win.active{border-color:var(--green);}               /* amber + green borders were fighting */
   .win .titlebar{font-size:10px;padding:6px 8px;}
   .icon-grid{display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;
     height:calc(100vh - 90px);width:auto;gap:10px 6px;}
@@ -544,7 +546,7 @@
   <p class="meta">Engineer at the intersection of software and AI.</p>
   <hr style="border:none;border-top:1px dashed var(--green-dim);margin:16px 0;">
   <h3>navigation.txt</h3>
-  <p>Double-click an icon to open it · Drag windows to move · Resize from the corner · Open <span class="stat">terminal</span> to explore via commands.</p>
+  <p>Click an icon to open it · Drag windows to move · Resize from the corner · Open <span class="stat">terminal</span> to explore via commands.</p>
   <p class="meta">try: help · whoami · ls · ls projects · neofetch</p>
   <hr style="border:none;border-top:1px dashed var(--green-dim);margin:16px 0;">
   <div class="meta">root@jain:~$ cat focus.txt</div>
@@ -813,14 +815,12 @@
       div.className='icon';
       div.tabIndex=0;
       div.innerHTML=`<div class="glyph">${a.icon}</div><div class="label">${a.title}</div>`;
-      div.addEventListener('dblclick',()=>openApp(key));
-      div.addEventListener('keydown',e=>{if(e.key==='Enter')openApp(key);});
-      let lastTap=0;
-      div.addEventListener('touchend',()=>{
-        const now=Date.now();
-        if(now-lastTap<400)openApp(key);
-        lastTap=now;
-      });
+      
+      // CHANGED: Use a simple click event instead of dblclick, allowing one click or one touch.
+      div.addEventListener('click',()=>openApp(key));
+      // Added spacebar support for accessibility
+      div.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ') { e.preventDefault(); openApp(key); }});
+      
       iconGrid.appendChild(div);
     });
   }
